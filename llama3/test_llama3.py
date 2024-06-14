@@ -66,8 +66,8 @@ llama_3 = Llama3(client=client)
 # Add your dataset
 sample = EvaluationDataset()
 
-# Assuming your JSON file path is 'sample.json'
-json_file_path = "sample.json"
+# Assuming your JSON file path is '../datasets/sample.json'
+json_file_path = "../datasets/sample.json"
 
 # Load the dataset from the JSON file
 try:
