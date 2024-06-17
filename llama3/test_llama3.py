@@ -1,3 +1,4 @@
+import os
 import json
 from ollama import Client  # type: ignore
 from deepeval.models.base_model import DeepEvalBaseLLM  # type: ignore
@@ -67,7 +68,7 @@ llama_3 = Llama3(client=client)
 sample = EvaluationDataset()
 
 # Assuming your JSON file path is '../datasets/sample.json'
-json_file_path = "../datasets/sample.json"
+json_file_path = os.path.join(os.path.dirname(__file__), '../datasets/sample.json')
 
 # Load the dataset from the JSON file
 try:
