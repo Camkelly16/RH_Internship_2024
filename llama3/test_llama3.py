@@ -1,5 +1,5 @@
 import os
-import json
+import pandas as pd
 from ollama import Client  # type: ignore
 from deepeval.models.base_model import DeepEvalBaseLLM  # type: ignore
 from deepeval.test_case import LLMTestCase  # type: ignore
@@ -67,30 +67,32 @@ llama_3 = Llama3(client=client)
 # Add your dataset
 sample = EvaluationDataset()
 
-# Assuming your JSON file path is '../datasets/sample.json'
-json_file_path = os.path.join(os.path.dirname(__file__), '../datasets/sample.json')
+# Assuming your CSV file path is '../datasets/sample.csv'
+csv_file_path = os.path.join(os.path.dirname(__file__), '../datasets/sample.csv')
 
-# Load the dataset from the JSON file
+# Load the dataset from the CSV file using pandas
 try:
-    with open(json_file_path, 'r') as file:
-        json_data = json.load(file)
+    df = pd.read_csv(csv_file_path, delimiter=';')
 except FileNotFoundError:
-    print(f"Error: The file {json_file_path} was not found.")
+    print(f"Error: The file {csv_file_path} was not found.")
     exit(1)
-except json.JSONDecodeError:
-    print(f"Error: The file {json_file_path} is not a valid JSON file.")
+except pd.errors.EmptyDataError:
+    print(f"Error: The file {csv_file_path} is empty.")
+    exit(1)
+except pd.errors.ParserError:
+    print(f"Error: The file {csv_file_path} is not a valid CSV file.")
     exit(1)
 
 # Add test cases to the dataset
-for item in json_data:
-    question = item['Question']
+for _, row in df.iterrows():
+    question = row['Question']
     options = [
-        item['Option A'],
-        item['Option B'],
-        item['Option C'],
-        item['Option D']
+        row['Option A'],
+        row['Option B'],
+        row['Option C'],
+        row['Option D']
     ]
-    correct_answer_index = item['Correct Answer'] - 1  # Adjust for 0-based index
+    correct_answer_index = int(row['Correct Answer']) - 1  # Adjust for 0-based index
     correct_answer = options[correct_answer_index]
     
     # Create the prompt for the model

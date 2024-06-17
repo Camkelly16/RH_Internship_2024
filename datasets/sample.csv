@@ -1,0 +1,2 @@
+Question;Option A;Option B;Option C;Option D;Correct Answer
+"What PromQL expression calculates the rate of HTTP requests over the last 1 minute?";"rate(http_requests_total[1m])";"increase(http_requests_total[1m])";"sum(http_requests_total[1m])";"avg(http_requests_total[1m])";"1"
