@@ -8,7 +8,7 @@ from deepeval.metrics import AnswerRelevancyMetric, FaithfulnessMetric
 from deepeval.dataset import EvaluationDataset
 import json
 
-class Llama3(DeepEvalBaseLLM):
+class Mistral(DeepEvalBaseLLM):
     def __init__(self, client):
         self.client = client
 
@@ -18,7 +18,7 @@ class Llama3(DeepEvalBaseLLM):
     def generate(self, prompt: str) -> str:
         client = self.load_model()
         try:
-            response = client.chat(model='llama3', messages=[
+            response = client.chat(model='mistral', messages=[
                 {'role': 'user', 'content': prompt},
             ])
             return response['message']['content']
@@ -29,7 +29,7 @@ class Llama3(DeepEvalBaseLLM):
         return self.generate(prompt)
 
     def get_model_name(self):
-        return "Llama3"
+        return "Mistral"
 
 def extract_correct_option(output):
     match = re.search(r"The correct answer is ([A-D])\.", output)
@@ -41,7 +41,7 @@ def extract_correct_option(output):
     return "Invalid Answer"
 
 client = Client(host='http://localhost:11434', timeout=100)
-llama3 = Llama3(client=client)
+mistral = Mistral(client=client)
 sample = EvaluationDataset()
 csv_file_path = os.path.join(os.path.dirname(__file__), '../datasets/sample.csv')
 
@@ -61,7 +61,7 @@ for _, row in df.iterrows():
     question = row['Question']
     options = [row['Option A'], row['Option B'], row['Option C'], row['Option D']]
     prompt = f"{question}\nOptions:\nA. {options[0]}\nB. {options[1]}\nC. {options[2]}\nD. {options[3]}"
-    actual_output = llama3.generate(prompt)
+    actual_output = mistral.generate(prompt)
     actual_output_cleaned = extract_correct_option(actual_output)
     actual_answer_text = options[ord(actual_output_cleaned) - ord('A')] if actual_output_cleaned != "Invalid Answer" else "Invalid Answer"
     correct_answer_index = int(row['Correct Answer']) - 1
@@ -78,7 +78,7 @@ for _, row in df.iterrows():
 
 def evaluate_dataset(dataset):
     for test_case in dataset.test_cases:
-        relevancy_metric = AnswerRelevancyMetric(model=llama3, threshold=0.5)
+        relevancy_metric = AnswerRelevancyMetric(model=mistral, threshold=0.5)
         try:
             relevancy_metric.measure(test_case)
         except ValueError as e:
@@ -89,7 +89,7 @@ def evaluate_dataset(dataset):
             relevancy_score = relevancy_metric.score
 
         try:
-            faithfulness_metric = FaithfulnessMetric(model=llama3, threshold=0.5)
+            faithfulness_metric = FaithfulnessMetric(model=mistral, threshold=0.5)
             faithfulness_metric.measure(test_case)
         except KeyError as e:
             faithfulness_score = f"KeyError: {e}"
