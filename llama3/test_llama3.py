@@ -40,7 +40,7 @@ def extract_correct_option(output):
         return match.group(1)
     return "Invalid Answer"
 
-client = Client(host='http://localhost:11434', timeout=100)
+client = Client(host='http://localhost:11434', timeout=140)
 llama3 = Llama3(client=client)
 sample = EvaluationDataset()
 csv_file_path = os.path.join(os.path.dirname(__file__), '../datasets/sample.csv')
