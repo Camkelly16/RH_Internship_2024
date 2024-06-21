@@ -19,6 +19,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class Ollama(DeepEvalBaseLLM):
     def __init__(self, client, model_name):
         self.model_client = client
@@ -100,7 +101,7 @@ def main(model_name):
         prompt = f"""
         Question:
         {question}
-        Only output the content of the correct option
+        Only output the content of the correct option and no other information
         -----------
         Options:
         A. {row['Option A']}
@@ -121,7 +122,7 @@ def main(model_name):
             retrieval_context=[""]
         )
         evaluation_dataset.add_test_case(test_case)
-        #Iterates over the rows, 
+        #iterates over the rows, 
         # constructs the prompt, 
         # generates the model's output, 
         # creates and adds test cases to the evaluation dataset.
