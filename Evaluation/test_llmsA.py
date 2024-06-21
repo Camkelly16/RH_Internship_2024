@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import argparse
 import logging
+import re
 from ollama import Client
 
 # Configure logging
@@ -22,9 +23,10 @@ class Ollama:
             {
                 "role": "system",
                 "content": (
-                    "The assistant is an expert in PromQL queries which is based on Prometheus and answers the questions diligently. "
-                    "It does not interfere with any other topics user mentions and politely refuses to answer. The assistant should "
-                    "always maintain a professional tone and avoid discussing personal opinions on politics."
+                    "You are taking a PromQl multiple-choice test. "
+                    "For each question, you need to select the correct option from the choices given. "
+                    "Your response should only be the letter of the correct option (A, B, C, or D) and nothing else. "
+                    "Do not provide explanations or additional information."
                 )
             },
             {
@@ -35,7 +37,13 @@ class Ollama:
         try:
             response = chat_model.chat(model=self.model_name, messages=messages)
             logger.info(f"Generated response: {response}")
-            return response["message"]["content"].strip()
+            # Extract the single letter answer (A, B, C, or D) from the response
+            match = re.search(r'\b[A-D]\b', response['message']['content'])
+            if match:
+                return match.group(0)
+            else:
+                logger.error(f"Failed to extract a valid answer from response: {response['message']['content']}")
+                return ""
         except Exception as e:
             logger.error(f"Error generating response: {e}")
             return ""
@@ -46,9 +54,10 @@ class Ollama:
             {
                 "role": "system",
                 "content": (
-                    "The assistant is an expert in PromQL queries which is based on Prometheus and answers the questions diligently. "
-                    "It does not interfere with any other topics user mentions and politely refuses to answer. The assistant should "
-                    "always maintain a professional tone and avoid discussing personal opinions on politics."
+                    "You are taking a PromQl multiple-choice test. "
+                    "For each question, you need to select the correct option from the choices given. "
+                    "Your response should only be the letter of the correct option (A, B, C, or D) and nothing else. "
+                    "Do not provide explanations or additional information."
                 )
             },
             {
@@ -58,7 +67,14 @@ class Ollama:
         ]
         try:
             response = await chat_model.chat(model=self.model_name, messages=messages)
-            return response["message"]["content"].strip()
+            logger.info(f"Generated response: {response}")
+            # Extract the single letter answer (A, B, C, or D) from the response
+            match = re.search(r'\b[A-D]\b', response['message']['content'])
+            if match:
+                return match.group(0)
+            else:
+                logger.error(f"Failed to extract a valid answer from response: {response['message']['content']}")
+                return ""
         except Exception as e:
             logger.error(f"Error generating response asynchronously: {e}")
             return ""
@@ -96,7 +112,7 @@ def main(model_name: str):
     client = Client(host='http://localhost:11434', timeout=140)
     model = Ollama(client=client, model_name=model_name)
     
-    csv_file_path = os.path.join(os.path.dirname(__file__), '../datasets/syntax.csv')
+    csv_file_path = os.path.join(os.path.dirname(__file__), '../datasets/sample.csv')
     df = read_csv_file(csv_file_path)
 
     correct_count = 0

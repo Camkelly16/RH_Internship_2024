@@ -143,4 +143,4 @@ if __name__ == "__main__":
     main(args.model)
     #allow of argument parsing for the script, 
     # parsing the --model argument and passing it to the main function.
-    #python3 test_llms.py --model llama3
+    # python3 test_llms.py --model llama3
