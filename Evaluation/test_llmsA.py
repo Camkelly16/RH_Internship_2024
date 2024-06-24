@@ -112,13 +112,14 @@ def main(model_name: str):
     client = Client(host='http://localhost:11434', timeout=140)
     model = Ollama(client=client, model_name=model_name)
     
-    csv_file_path = os.path.join(os.path.dirname(__file__), '../datasets/sample.csv')
+    csv_file_path = os.path.join(os.path.dirname(__file__), '../datasets/syntax.csv')
     df = read_csv_file(csv_file_path)
 
     correct_count = 0
     total_count = len(df)
+    incorrect_questions = []
 
-    for _, row in df.iterrows():
+    for index, row in df.iterrows():
         question = row['Question']
         options = [row['Option A'], row['Option B'], row['Option C'], row['Option D']]
         prompt = create_prompt(question, options)
@@ -131,10 +132,15 @@ def main(model_name: str):
             correct_count += 1
             logger.info(f"Correct: {question}")
         else:
+            incorrect_questions.append(index + 1)  # Question number is index + 1
             logger.info(f"Incorrect: {question} - Expected {expected_output}, but got {actual_output}")
 
     total_score = (correct_count / total_count) * 100
     logger.info(f"Total Score for model {model_name}: {correct_count}/{total_count} ({total_score:.2f}%)")
+    if incorrect_questions:
+        logger.info(f"Questions answered incorrectly: {', '.join(map(str, incorrect_questions))}")
+    else:
+        logger.info("All questions answered correctly!")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Evaluate LLM with different models.')
