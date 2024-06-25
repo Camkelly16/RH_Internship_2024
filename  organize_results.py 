@@ -1,0 +1,51 @@
+import pandas as pd
+import os
+
+def organize_results_side_by_side(results_csv_path: str, output_csv_path: str):
+    # Read the existing results CSV
+    if not os.path.exists(results_csv_path):
+        print(f"Error: The file {results_csv_path} does not exist.")
+        return
+    
+    results_df = pd.read_csv(results_csv_path)
+    print("Read CSV:")
+    print(results_df.head())  # Debug: Print the first few rows of the CSV
+
+    # Create a list to store organized results
+    organized_data = []
+
+    # Get unique question numbers and models
+    question_numbers = sorted(results_df['Question Number'].unique())
+    models = results_df['Model'].unique()
+
+    for question_number in question_numbers:
+        question_data = results_df[results_df['Question Number'] == question_number]
+        for model in models:
+            model_data = question_data[question_data['Model'] == model]
+            if not model_data.empty:
+                answers = model_data['Model Answer'].tolist()
+                # Assume that 'Correct' column is the same for all entries of a particular model and question
+                correct = model_data['Correct'].values[0] if 'Correct' in model_data.columns else None
+                entry = [question_number, model] + answers + [correct]
+                organized_data.append(entry)
+
+    # Determine the maximum number of answers any model has provided for a question
+    max_answers = max(len(row) - 3 for row in organized_data)  # Subtract 3 for 'Question Number', 'Model', and 'Correct'
+
+    # Construct columns based on the maximum number of answers
+    columns = ['Question Number', 'Model'] + [f'Answer {i+1}' for i in range(max_answers)] + ['Correct']
+
+    # Convert the organized data to a DataFrame
+    organized_df = pd.DataFrame(organized_data, columns=columns)
+    
+    # Save the organized results to a new CSV file
+    organized_df.to_csv(output_csv_path, index=False)
+    print(f"Organized results saved to {output_csv_path}")
+
+if __name__ == "__main__":
+    # Define the paths for the input and output files
+    results_csv_path = 'datasets/results.csv'
+    output_csv_path = 'datasets/organized_results.csv'
+    
+    # Organize the results
+    organize_results_side_by_side(results_csv_path, output_csv_path)

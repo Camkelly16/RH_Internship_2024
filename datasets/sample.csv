@@ -1,5 +1,2 @@
 Question;Option A;Option B;Option C;Option D;Correct Answer
 "How do you filter metrics by the label 'job' with the value 'api-server'?";"http_requests_total{job=""api-server""}";"http_requests_total[job=""api-server""]";"http_requests_total(job=""api-server"")";"http_requests_total@job=""api-server""";"1"
-"Which PromQL expression filters metrics to those where the label 'status' is not equal to '200'?";"http_requests_total{status!=""200""}";"http_requests_total{status<>200}";"http_requests_total(status!=""200"")";"http_requests_total{status!200}";"1"
-"How do you calculate the average CPU usage per instance over the last 5 minutes?";"avg(rate(node_cpu_seconds_total[5m])) by (instance)";"sum(rate(node_cpu_seconds_total[5m])) by (instance)";"max(rate(node_cpu_seconds_total[5m])) by (instance)";"min(rate(node_cpu_seconds_total[5m])) by (instance)";"1"
-"What is the correct PromQL syntax to find the median of the response_time metric over the last hour?";"median_over_time(response_time[1h])";"quantile(0.5, response_time)[1h]";"median(response_time)[1h]";"percentile(response_time, 50)[1h]";"2"

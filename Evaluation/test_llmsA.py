@@ -23,7 +23,7 @@ class Ollama:
             {
                 "role": "system",
                 "content": (
-                    "You are taking a PromQl multiple-choice test. "
+                    "You are a PromQl expert taking a PromQl multiple-choice test. "
                     "For each question, you need to select the correct option from the choices given. "
                     "Your response should only be the letter of the correct option (A, B, C, or D) and nothing else. "
                     "Do not provide explanations or additional information."
@@ -54,7 +54,7 @@ class Ollama:
             {
                 "role": "system",
                 "content": (
-                    "You are taking a PromQl multiple-choice test. "
+                    "You are a PromQl expert taking a PromQl multiple-choice test. "
                     "For each question, you need to select the correct option from the choices given. "
                     "Your response should only be the letter of the correct option (A, B, C, or D) and nothing else. "
                     "Do not provide explanations or additional information."
@@ -108,16 +108,12 @@ def create_prompt(question: str, options: list[str]) -> str:
     D. {options[3]}
     """
 
-def main(model_name: str):
+def main(model_name: str, results_df: pd.DataFrame):
     client = Client(host='http://localhost:11434', timeout=140)
     model = Ollama(client=client, model_name=model_name)
     
     csv_file_path = os.path.join(os.path.dirname(__file__), '../datasets/syntax.csv')
     df = read_csv_file(csv_file_path)
-
-    correct_count = 0
-    total_count = len(df)
-    incorrect_questions = []
 
     for index, row in df.iterrows():
         question = row['Question']
@@ -127,24 +123,40 @@ def main(model_name: str):
 
         correct_answer_index = int(row['Correct Answer']) - 1
         expected_output = ['A', 'B', 'C', 'D'][correct_answer_index]
+        correctness = actual_output == expected_output
 
-        if actual_output == expected_output:
-            correct_count += 1
-            logger.info(f"Correct: {question}")
-        else:
-            incorrect_questions.append(index + 1)  # Question number is index + 1
-            logger.info(f"Incorrect: {question} - Expected {expected_output}, but got {actual_output}")
+        new_row = pd.DataFrame([{
+            'Model': model_name,
+            'Question Number': index + 1,
+            'Model Answer': actual_output,
+            'Correct': correctness
+        }])
+        results_df = pd.concat([results_df, new_row], ignore_index=True)
 
-    total_score = (correct_count / total_count) * 100
-    logger.info(f"Total Score for model {model_name}: {correct_count}/{total_count} ({total_score:.2f}%)")
-    if incorrect_questions:
-        logger.info(f"Questions answered incorrectly: {', '.join(map(str, incorrect_questions))}")
-    else:
-        logger.info("All questions answered correctly!")
+    return results_df
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Evaluate LLM with different models.')
-    parser.add_argument('--model', type=str, required=True, help='Name of the LLM model to use.')
+    parser.add_argument('--models', type=str, nargs='+', required=True, help='Names of the LLM models to use.')
     
     args = parser.parse_args()
-    main(args.model)
+    
+    # Define the list of models to evaluate
+    models = args.models
+    
+    # Initialize an empty DataFrame to store results
+    all_results_df = pd.DataFrame(columns=['Model', 'Question Number', 'Model Answer', 'Correct'])
+
+    # Load existing results if they exist
+    results_csv_path = os.path.join(os.path.dirname(__file__), '../datasets/results.csv')
+    if os.path.exists(results_csv_path):
+        all_results_df = pd.read_csv(results_csv_path)
+
+    # Loop through each model and evaluate
+    for model_name in models:
+        all_results_df = main(model_name, all_results_df)
+    
+    # Save the results to a CSV file
+    all_results_df.to_csv(results_csv_path, index=False)
+    
+    logger.info(f"Results saved to {results_csv_path}")
