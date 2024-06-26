@@ -1,6 +1,6 @@
 .DS_Store
 LLMs/
-/evaluation/.deepeval
-/evaluation/.pytest_cache
-/evaluation/_pycache
+/Evaluation/.deepeval
+/Evaluation/.pytest_cache
+/Evaluation/_pycache
 /Evaluation/.deepeval-cache.jsonst
