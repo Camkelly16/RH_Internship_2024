@@ -1,0 +1,92 @@
+import pandas as pd
+import os
+
+def get_correct_answers(syntax_csv_path: str):
+    syntax_df = pd.read_csv(syntax_csv_path, delimiter=';')
+    correct_answers = {}
+    for _, row in syntax_df.iterrows():
+        question_number = _  # Assuming the index of the row is the question number
+        correct_option = row['Correct Answer']
+        # Map 1, 2, 3, 4 to A, B, C, D
+        if correct_option == 1:
+            correct_answer = 'A'
+        elif correct_option == 2:
+            correct_answer = 'B'
+        elif correct_option == 3:
+            correct_answer = 'C'
+        elif correct_option == 4:
+            correct_answer = 'D'
+        else:
+            correct_answer = None
+        correct_answers[question_number + 1] = correct_answer  # Adding 1 to match human-readable question numbers
+    return correct_answers
+
+def organize_results_side_by_side(results_csv_path: str, syntax_csv_path: str, output_csv_path: str):
+    # Read the correct answers from syntax.csv
+    correct_answers = get_correct_answers(syntax_csv_path)
+
+    # Read the existing results CSV
+    if not os.path.exists(results_csv_path):
+        print(f"Error: The file {results_csv_path} does not exist.")
+        return
+    
+    results_df = pd.read_csv(results_csv_path)
+    print("Results CSV Columns:", results_df.columns)  # Debug: Print the columns of the results CSV
+
+    # Filter out the accuracy rows
+    accuracy_df = results_df[results_df['Question Number'].isna()][['Model', 'Accuracy']].drop_duplicates()
+
+    # Filter out the actual results rows
+    results_df = results_df.dropna(subset=['Question Number'])
+
+    # Create a list to store organized results
+    organized_data = []
+
+    # Get unique question numbers and models
+    question_numbers = sorted(results_df['Question Number'].unique())
+    models = results_df['Model'].unique()
+
+    # Iterate over each model
+    for model in models:
+        model_data = results_df[results_df['Model'] == model]
+        for question_number in question_numbers:
+            question_data = model_data[model_data['Question Number'] == question_number]
+            if not question_data.empty:
+                answers = question_data['Model Answer'].tolist()
+                # Determine if all answers are correct
+                correct = all(question_data['Correct'].values)
+                correct_answer = correct_answers.get(question_number, "No correct answer")
+                entry = [question_number, model] + answers + [correct_answer, correct]
+                organized_data.append(entry)
+
+        # Collect the accuracy for the model
+        accuracies = accuracy_df[accuracy_df['Model'] == model]['Accuracy'].dropna().tolist()
+        organized_data.append(['Overall Accuracy', model] + [None] * (len(entry) - 5) + accuracies)
+
+    # Determine the maximum number of answers any model has provided for a question
+    max_answers = max(len(row) - 5 for row in organized_data if row[0] != 'Overall Accuracy')  # Subtract 5 for 'Question Number', 'Model', 'Correct Answer', 'Correct', and 'Accuracy'
+
+    # Construct columns based on the maximum number of answers
+    max_accuracies = max(len(row) - 4 for row in organized_data if row[0] == 'Overall Accuracy')  # Subtract 4 for 'Question Number', 'Model', 'Correct Answer', and 'Correct'
+    columns = ['Question Number', 'Model'] + [f'Answer {i+1}' for i in range(max_answers)] + ['Correct Answer', 'Correct'] + [f'Accuracy {i+1}' for i in range(max_accuracies)]
+
+    # Adjust organized_data entries to match the number of columns
+    for entry in organized_data:
+        if len(entry) < len(columns):
+            entry.extend([None] * (len(columns) - len(entry)))
+
+    # Convert the organized data to a DataFrame
+    organized_df = pd.DataFrame(organized_data, columns=columns)
+    
+    # Save the organized results to a new CSV file
+    organized_df.to_csv(output_csv_path, index=False)
+    print(f"Organized results saved to {output_csv_path}")
+
+if __name__ == "__main__":
+    # Define the absolute paths for the input and output files
+    results_csv_path = os.path.abspath('datasets/results.csv')
+    syntax_csv_path = os.path.abspath('datasets/syntax.csv')
+    output_csv_path = os.path.abspath('datasets/organized_results.csv')
+    
+    # Organize the results
+    organize_results_side_by_side(results_csv_path, syntax_csv_path, output_csv_path)
