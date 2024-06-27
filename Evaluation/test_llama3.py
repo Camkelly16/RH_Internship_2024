@@ -1,51 +1,71 @@
 import os
-import pandas as pd
-import argparse
 import logging
 import re
+import pandas as pd
+import argparse
+from langchain.chains import LLMChain
+from langchain.prompts import PromptTemplate
+from langchain_community.llms.huggingface_text_gen_inference import HuggingFaceTextGenInference
 import requests
+import warnings
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class HuggingFaceModel:
-    def __init__(self, endpoint_url: str, api_key: str):
-        self.endpoint_url = endpoint_url
-        self.api_key = api_key
+# Disable warnings
+requests.packages.urllib3.disable_warnings()
+warnings.filterwarnings("ignore")
 
-    def generate(self, message_prompt: str) -> str:
-        payload = {
-            "inputs": message_prompt,
-            "parameters": {
-                "max_new_tokens": 50,  # Adjust as needed
-                "return_full_text": False,
-                "top_k": 10,
-                "top_p": 0.9,
-                "temperature": 0.7
-            }
-        }
-        headers = {
-            "Authorization": f"Bearer {self.api_key}"
-        }
+class Llama3:
+    def __init__(self):
+        # Updated server URL
+        server_url = "https://meta-llama3-8b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com"
+        self.llm = HuggingFaceTextGenInference(
+            inference_server_url=server_url,
+            max_new_tokens=512,
+            top_k=10,
+            top_p=0.5,
+            typical_p=0.5,
+            temperature=0.05,
+            repetition_penalty=1.03,
+            streaming=True,
+            client=requests.Session()  # Ensure we're using a session that ignores SSL warnings
+        )
+
+    def generate(self, context: str, question: str) -> str:
         try:
-            response = requests.post(self.endpoint_url, headers=headers, json=payload)
-            response.raise_for_status()
-            response_json = response.json()
-            generated_text = response_json[0]['generated_text']
-            logger.info(f"Generated response: {generated_text}")
-            # Extract the single letter answer (A, B, C, or D) from the response
-            match = re.search(r'\b[A-D]\b', generated_text)
-            if match:
-                return match.group(0)
-            logger.error(f"Failed to extract a valid answer from response: {generated_text}")
-            return ""
-        except Exception as e:
-            logger.error(f"Error generating response: {e}")
-            return ""
+            # Define the prompt template
+            prompt_template = """
+            You are a PromQl expert taking a PromQl multiple-choice test.
+            For each question, you need to select the correct option from the choices given.
+            Your response should only be the letter of the correct option (A, B, C, or D) and nothing else.
+            Do not provide explanations or additional information.
 
-    async def a_generate(self, message_prompt: str) -> str:
-        return self.generate(message_prompt)  # For simplicity, using the same method synchronously
+            Here is the context to consider when answering the question:
+            {context}
+
+            ### QUESTION: 
+            {question}
+            ### ANSWER:
+            """
+
+            # Create the prompt template instance
+            prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
+            llm_chain = LLMChain(llm=self.llm, prompt=prompt)
+            response = llm_chain.invoke({"context": context, "question": question})
+            logger.info(f"Generated response: {response}")
+
+            # Extract the answer from the response
+            if response and response['text']:
+                match = re.search(r'\b[A-D]\b', response['text'])
+                if match:
+                    return match.group(0)
+            logger.error(f"Failed to extract a valid answer from response: {response}")
+            return ""
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Connection error: {e}")
+            return ""
 
 def read_csv_file(csv_file_path: str) -> pd.DataFrame:
     try:
@@ -73,19 +93,18 @@ def create_prompt(question: str, options: list[str]) -> str:
     D. {options[3]}
     """
 
-def calculate_accuracy(results_df: pd.DataFrame, model_name: str) -> float:
-    model_results = results_df[results_df['Model'] == model_name]
-    correct_answers = model_results['Correct'].sum()
-    total_questions = len(model_results)
+def calculate_accuracy(results_df: pd.DataFrame) -> float:
+    correct_answers = results_df['Correct'].sum()
+    total_questions = len(results_df)
     if total_questions == 0:
         return 0.0
     accuracy_percentage = (correct_answers / total_questions) * 100
     return accuracy_percentage
 
-def main(model_name: str, results_df: pd.DataFrame, endpoint_url: str, api_key: str) -> pd.DataFrame:
-    model = HuggingFaceModel(endpoint_url=endpoint_url, api_key=api_key)
+def main() -> pd.DataFrame:
+    model = Llama3()
     
-    csv_file_path = os.path.join(os.path.dirname(__file__), '../datasets/syntax.csv')
+    csv_file_path = os.path.join(os.path.dirname(__file__), '../datasets/sample.csv')
     df = read_csv_file(csv_file_path)
 
     results_list = []
@@ -94,55 +113,50 @@ def main(model_name: str, results_df: pd.DataFrame, endpoint_url: str, api_key: 
         question = row['Question']
         options = [row['Option A'], row['Option B'], row['Option C'], row['Option D']]
         prompt = create_prompt(question, options)
-        actual_output = model.generate(prompt)
+        context = f"Options:\nA. {options[0]}\nB. {options[1]}\nC. {options[2]}\nD. {options[3]}"
+        actual_output = model.generate(context, question)
 
         correct_answer_index = int(row['Correct Answer']) - 1
         expected_output = ['A', 'B', 'C', 'D'][correct_answer_index]
         correctness = actual_output == expected_output
 
         new_row = {
-            'Model': model_name,
+            'Model': 'Llama3',
             'Question Number': index + 1,
             'Model Answer': actual_output,
             'Correct': correctness
         }
         results_list.append(new_row)
 
-    results_df = pd.concat([results_df, pd.DataFrame(results_list)], ignore_index=True)
-    
+    results_df = pd.DataFrame(results_list)
+
+    # Calculate accuracy
+    accuracy_percentage = calculate_accuracy(results_df)
+    logger.info(f"Accuracy: {accuracy_percentage:.2f}%")
+
+    # Add accuracy to the results DataFrame
+    accuracy_row = pd.DataFrame([{
+        'Model': 'Llama3',
+        'Question Number': 'Accuracy',
+        'Model Answer': '',
+        'Correct': accuracy_percentage
+    }])
+    results_df = pd.concat([results_df, accuracy_row], ignore_index=True)
+
     return results_df
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Evaluate LLM with different models.')
-    parser.add_argument('--models', type=str, nargs='+', required=True, help='Names of the LLM models to use.')
-    parser.add_argument('--endpoint_url', type=str, required=True, help='Endpoint URL for the HuggingFace model.')
-    parser.add_argument('--api_key', type=str, required=True, help='API key for accessing the HuggingFace model.')
-    
-    args = parser.parse_args()
-    
-    # Define the list of models to evaluate
-    models = args.models
-    
     # Initialize an empty DataFrame to store results
     all_results_df = pd.DataFrame(columns=['Model', 'Question Number', 'Model Answer', 'Correct'])
 
     # Load existing results if they exist
-    results_csv_path = os.path.join(os.path.dirname(__file__), '../datasets/results.csv')
-    if os.path.exists(results_csv_path):
+    results_csv_path = os.path.join(os.path.dirname(__file__), '../datasets/Llama3_results.csv')
+    if (os.path.exists(results_csv_path)):
         all_results_df = pd.read_csv(results_csv_path)
 
-    # Loop through each model and evaluate
-    accuracy_scores = []
-
-    for model_name in models:
-        all_results_df = main(model_name, all_results_df, args.endpoint_url, args.api_key)
-        accuracy_percentage = calculate_accuracy(all_results_df, model_name)
-        accuracy_scores.append({'Model': model_name, 'Accuracy': accuracy_percentage})
-        logger.info(f"Accuracy for {model_name}: {accuracy_percentage:.2f}%")
-
-    # Convert accuracy scores to DataFrame and append to results
-    accuracy_df = pd.DataFrame(accuracy_scores)
-    all_results_df = pd.concat([all_results_df, accuracy_df], ignore_index=True)
+    # Evaluate the model
+    model_results_df = main()
+    all_results_df = pd.concat([all_results_df, model_results_df], ignore_index=True)
 
     # Save the results to a CSV file
     all_results_df.to_csv(results_csv_path, index=False)
