@@ -41,13 +41,6 @@ class Llama3:
             For each question, you need to select the correct option from the choices given.
             Your response should only be the letter of the correct option (A, B, C, or D) and nothing else.
             Do not provide explanations or additional information.
-
-            Here is the context to consider when answering the question:
-            {context}
-
-            ### QUESTION: 
-            {question}
-            ### ANSWER:
             """
 
             # Create the prompt template instance
