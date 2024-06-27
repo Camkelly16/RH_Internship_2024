@@ -19,8 +19,12 @@ warnings.filterwarnings("ignore")
 
 class Llama3:
     def __init__(self):
-        # Updated server URL
         server_url = "https://meta-llama3-8b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com"
+        
+        # Create a session and disable SSL verification
+        session = requests.Session()
+        session.verify = False
+        
         self.llm = HuggingFaceTextGenInference(
             inference_server_url=server_url,
             max_new_tokens=512,
@@ -30,7 +34,7 @@ class Llama3:
             temperature=0.05,
             repetition_penalty=1.03,
             streaming=True,
-            client=requests.Session()  # Ensure we're using a session that ignores SSL warnings
+            client=session  # Pass the session with disabled SSL verification
         )
 
     def generate(self, context: str, question: str) -> str:
@@ -41,6 +45,13 @@ class Llama3:
             For each question, you need to select the correct option from the choices given.
             Your response should only be the letter of the correct option (A, B, C, or D) and nothing else.
             Do not provide explanations or additional information.
+
+            Here is the context to consider when answering the question:
+            {context}
+
+            ### QUESTION: 
+            {question}
+            ### ANSWER:
             """
 
             # Create the prompt template instance
@@ -144,7 +155,7 @@ if __name__ == "__main__":
 
     # Load existing results if they exist
     results_csv_path = os.path.join(os.path.dirname(__file__), '../datasets/Llama3_results.csv')
-    if (os.path.exists(results_csv_path)):
+    if os.path.exists(results_csv_path):
         all_results_df = pd.read_csv(results_csv_path)
 
     # Evaluate the model
