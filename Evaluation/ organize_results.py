@@ -4,8 +4,16 @@ import os
 def get_correct_answers(syntax_csv_path: str):
     syntax_df = pd.read_csv(syntax_csv_path, delimiter=';')
     correct_answers = {}
-    for _, row in syntax_df.iterrows():
-        question_number = _  # Assuming the index of the row is the question number
+    questions = {}
+    for index, row in syntax_df.iterrows():
+        question_number = index + 1  # Assuming the index + 1 is the question number
+        questions[question_number] = {
+            'Question': row['Question'],
+            'Option A': row['Option A'],
+            'Option B': row['Option B'],
+            'Option C': row['Option C'],
+            'Option D': row['Option D'],
+        }
         correct_option = row['Correct Answer']
         # Map 1, 2, 3, 4 to A, B, C, D
         if correct_option == 1:
@@ -18,12 +26,12 @@ def get_correct_answers(syntax_csv_path: str):
             correct_answer = 'D'
         else:
             correct_answer = None
-        correct_answers[question_number + 1] = correct_answer  # Adding 1 to match human-readable question numbers
-    return correct_answers
+        correct_answers[question_number] = correct_answer
+    return correct_answers, questions
 
 def organize_results_side_by_side(results_csv_path: str, syntax_csv_path: str, output_csv_path: str):
-    # Read the correct answers from syntax.csv
-    correct_answers = get_correct_answers(syntax_csv_path)
+    # Read the correct answers and questions from syntax.csv
+    correct_answers, questions = get_correct_answers(syntax_csv_path)
 
     # Read the existing results CSV
     if not os.path.exists(results_csv_path):
@@ -53,22 +61,19 @@ def organize_results_side_by_side(results_csv_path: str, syntax_csv_path: str, o
             question_data = model_data[model_data['Question Number'] == question_number]
             if not question_data.empty:
                 answers = question_data['Model Answer'].tolist()
-                # Determine if all answers are correct
-                correct = all(question_data['Correct'].values)
                 correct_answer = correct_answers.get(question_number, "No correct answer")
-                entry = [question_number, model] + answers + [correct_answer, correct]
+                question_info = questions.get(question_number, {})
+                entry = [model, question_info.get('Question'), 
+                         question_info.get('Option A'), question_info.get('Option B'), 
+                         question_info.get('Option C'), question_info.get('Option D'), 
+                         correct_answer] + answers
                 organized_data.append(entry)
 
-        # Collect the accuracy for the model
-        accuracies = accuracy_df[accuracy_df['Model'] == model]['Accuracy'].dropna().tolist()
-        organized_data.append(['Overall Accuracy', model] + [None] * (len(entry) - 5) + accuracies)
-
     # Determine the maximum number of answers any model has provided for a question
-    max_answers = max(len(row) - 5 for row in organized_data if row[0] != 'Overall Accuracy')  # Subtract 5 for 'Question Number', 'Model', 'Correct Answer', 'Correct', and 'Accuracy'
+    max_answers = max(len(row) - 7 for row in organized_data)  # Subtract 7 for fixed columns before the answers
 
     # Construct columns based on the maximum number of answers
-    max_accuracies = max(len(row) - 4 for row in organized_data if row[0] == 'Overall Accuracy')  # Subtract 4 for 'Question Number', 'Model', 'Correct Answer', and 'Correct'
-    columns = ['Question Number', 'Model'] + [f'Answer {i+1}' for i in range(max_answers)] + ['Correct Answer', 'Correct'] + [f'Accuracy {i+1}' for i in range(max_accuracies)]
+    columns = ['Model', 'Question', 'Option A', 'Option B', 'Option C', 'Option D', 'Correct Answer'] + [f'Answer Instance {i+1}' for i in range(max_answers)]
 
     # Adjust organized_data entries to match the number of columns
     for entry in organized_data:

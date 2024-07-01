@@ -14,7 +14,6 @@ from deepeval.dataset import EvaluationDataset
 from deepeval import evaluate
 import logging
 #helps with debugging
-
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

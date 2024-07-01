@@ -5,9 +5,10 @@ import pandas as pd
 import argparse
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain_community.llms.huggingface_text_gen_inference import HuggingFaceTextGenInference
+from langchain_community.llms.huggingface_endpoint import HuggingFaceEndpoint
 import requests
 import warnings
+os.environ["CURL_CA_BUNDLE"] =""
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -19,57 +20,65 @@ warnings.filterwarnings("ignore")
 
 class Llama3:
     def __init__(self):
-        server_url = "https://meta-llama3-8b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com"
-        
+        # Ensure the Hugging Face API key is set correctly
+        api_key = os.getenv("HUGGINGFACEHUB_API_TOKEN")
+        if not api_key:
+            raise ValueError("Hugging Face API token not set in environment variables.")
+
+        # Set the endpoint URL directly
+        endpoint_url = "https://meta-llama3-8b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com"
+
         # Create a session and disable SSL verification
         session = requests.Session()
         session.verify = False
-        
-        self.llm = HuggingFaceTextGenInference(
-            inference_server_url=server_url,
+
+        # Update the HuggingFaceEndpoint to use the session for requests
+        self.llm = HuggingFaceEndpoint(
+            endpoint_url=endpoint_url,
             max_new_tokens=512,
-            top_k=10,
-            top_p=0.5,
-            typical_p=0.5,
-            temperature=0.05,
+            top_p=0.95,
+            typical_p=0.95,
+            temperature=0.01,
             repetition_penalty=1.03,
-            streaming=True,
-            client=session  # Pass the session with disabled SSL verification
+            # huggingfacehub_api_token=api_key,  # Disable SSL verification
+            client=session
         )
 
-    def generate(self, context: str, question: str) -> str:
-        try:
+    def generate(self, options: str, question: str) -> str:
+        # try:
             # Define the prompt template
-            prompt_template = """
+            prompt_template = f"""
             You are a PromQl expert taking a PromQl multiple-choice test.
             For each question, you need to select the correct option from the choices given.
             Your response should only be the letter of the correct option (A, B, C, or D) and nothing else.
             Do not provide explanations or additional information.
 
-            Here is the context to consider when answering the question:
-            {context}
-
             ### QUESTION: 
             {question}
+            ### OPTIONS:
+            {options}
+
             ### ANSWER:
             """
 
             # Create the prompt template instance
-            prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
-            llm_chain = LLMChain(llm=self.llm, prompt=prompt)
-            response = llm_chain.invoke({"context": context, "question": question})
-            logger.info(f"Generated response: {response}")
+            # prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
+            # llm_chain = LLMChain(llm=self.llm, prompt=prompt)
+            # response = llm_chain.invoke({"context": context, "question": question})
+            # logger.info(f"Generated response: {response}")
+            response=self.llm.invoke(prompt_template)
+            print(response)
 
             # Extract the answer from the response
             if response and response['text']:
                 match = re.search(r'\b[A-D]\b', response['text'])
-                if match:
-                    return match.group(0)
-            logger.error(f"Failed to extract a valid answer from response: {response}")
-            return ""
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Connection error: {e}")
-            return ""
+        #         if match:
+        #             return match.group(0)
+        #     logger.error(f"Failed to extract a valid answer from response: {response}")
+        #     return ""
+        # except requests.exceptions.RequestException as e:
+        #     logger.error(f"Connection error: {e}")
+        #     return ""
 
 def read_csv_file(csv_file_path: str) -> pd.DataFrame:
     try:

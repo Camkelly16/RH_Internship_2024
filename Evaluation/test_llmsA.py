@@ -4,7 +4,6 @@ import argparse
 import logging
 import re
 from ollama import Client
-
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -121,7 +120,7 @@ def main(model_name: str) -> pd.DataFrame:
     client = Client(host='http://localhost:11434', timeout=140)
     model = Ollama(client=client, model_name=model_name)
     
-    csv_file_path = os.path.join(os.path.dirname(__file__), '../datasets/sample.csv')
+    csv_file_path = os.path.join(os.path.dirname(__file__), '../datasets/syntax.csv')
     df = read_csv_file(csv_file_path)
 
     results_list = []
@@ -146,18 +145,9 @@ def main(model_name: str) -> pd.DataFrame:
 
     results_df = pd.DataFrame(results_list)
 
-    # Calculate accuracy
+    # Calculate accuracy and display it
     accuracy_percentage = calculate_accuracy(results_df, model_name)
     logger.info(f"Accuracy for {model_name}: {accuracy_percentage:.2f}%")
-
-    # Add accuracy to the results DataFrame
-    accuracy_row = pd.DataFrame([{
-        'Model': model_name,
-        'Question Number': 'Accuracy',
-        'Model Answer': '',
-        'Correct': accuracy_percentage
-    }])
-    results_df = pd.concat([results_df, accuracy_row], ignore_index=True)
 
     return results_df
 
