@@ -1,20 +1,18 @@
 import os
 import logging
-import re
 import pandas as pd
-import argparse
-from langchain.chains import LLMChain
-from langchain.prompts import PromptTemplate
-from langchain_community.llms.huggingface_endpoint import HuggingFaceEndpoint
 import requests
 import warnings
-os.environ["CURL_CA_BUNDLE"] =""
+from langchain_community.llms.huggingface_endpoint import HuggingFaceEndpoint
+
+# Ensure the CURL_CA_BUNDLE is empty to avoid SSL issues
+os.environ["CURL_CA_BUNDLE"] = ""
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Disable warnings
+# Disable warnings for requests and other potential warnings
 requests.packages.urllib3.disable_warnings()
 warnings.filterwarnings("ignore")
 
@@ -40,138 +38,125 @@ class Llama3:
             typical_p=0.95,
             temperature=0.01,
             repetition_penalty=1.03,
-            # huggingfacehub_api_token=api_key,  # Disable SSL verification
             client=session
         )
 
     def generate(self, options: str, question: str) -> str:
-        # try:
-            # Define the prompt template
-            prompt_template = f"""
-            You are a PromQl expert taking a PromQl multiple-choice test.
-            For each question, you need to select the correct option from the choices given.
-            Your response should only be the letter of the correct option (A, B, C, or D) and nothing else.
-            Do not provide explanations or additional information.
+        # Define the prompt template
+        prompt_template = f"""
+        You are a PromQl expert taking a PromQl multiple-choice test.
+        For each question, you need to select the correct option from the choices given.
+        Your response should only be the letter of the correct option (A, B, C, or D) and nothing else.
+        Do not provide explanations or additional information.
 
-            ### QUESTION: 
-            {question}
-            ### OPTIONS:
-            {options}
+        ### QUESTION: 
+        {question}
+        ### OPTIONS:
+        {options}
 
-            ### ANSWER:
-            """
+        ### ANSWER:
+        """
+        response = self.llm.invoke(prompt_template)
+        # Strip and debug the response
+        response = response.strip()
+        logger.debug(f"Raw response: {response}")
+        # Extract only the first letter if response contains unwanted characters
+        if response and len(response) > 0:
+            response = response[0]
+        return response
 
-            # Create the prompt template instance
-            # prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
-            # llm_chain = LLMChain(llm=self.llm, prompt=prompt)
-            # response = llm_chain.invoke({"context": context, "question": question})
-            # logger.info(f"Generated response: {response}")
-            response=self.llm.invoke(prompt_template)
-            print(response)
+def read_and_generate_answers(csv_file_path):
+    # Verify if the file exists
+    if not os.path.exists(csv_file_path):
+        logger.error(f"File not found: {csv_file_path}")
+        return
 
-            # Extract the answer from the response
-            if response and response['text']:
-                match = re.search(r'\b[A-D]\b', response['text'])
-        #         if match:
-        #             return match.group(0)
-        #     logger.error(f"Failed to extract a valid answer from response: {response}")
-        #     return ""
-        # except requests.exceptions.RequestException as e:
-        #     logger.error(f"Connection error: {e}")
-        #     return ""
+    # Read the CSV file with appropriate delimiter
+    df = pd.read_csv(csv_file_path, delimiter=';')
+    logger.info(f"CSV columns: {df.columns.tolist()}")
 
-def read_csv_file(csv_file_path: str) -> pd.DataFrame:
-    try:
-        return pd.read_csv(csv_file_path, delimiter=';')
-    except FileNotFoundError:
-        logger.error(f"Error: The file {csv_file_path} was not found.")
-        exit(1)
-    except pd.errors.EmptyDataError:
-        logger.error(f"Error: The file {csv_file_path} is empty.")
-        exit(1)
-    except pd.errors.ParserError:
-        logger.error(f"Error: The file {csv_file_path} is not a valid CSV file.")
-        exit(1)
+    # Instantiate the Llama3 class
+    llama3 = Llama3()
 
-def create_prompt(question: str, options: list[str]) -> str:
-    return f"""
-    Question:
-    {question}
-    Only output the letter of the correct option (A, B, C, or D) without any additional text or explanation.
-    -----------
-    Options:
-    A. {options[0]}
-    B. {options[1]}
-    C. {options[2]}
-    D. {options[3]}
-    """
+    results = []
 
-def calculate_accuracy(results_df: pd.DataFrame) -> float:
-    correct_answers = results_df['Correct'].sum()
-    total_questions = len(results_df)
-    if total_questions == 0:
-        return 0.0
-    accuracy_percentage = (correct_answers / total_questions) * 100
-    return accuracy_percentage
+    total_questions = 0
+    correct_answers = 0
 
-def main() -> pd.DataFrame:
-    model = Llama3()
-    
-    csv_file_path = os.path.join(os.path.dirname(__file__), '../datasets/sample.csv')
-    df = read_csv_file(csv_file_path)
+    # Mapping from number to letter
+    num_to_letter = {
+        "1": "A",
+        "2": "B",
+        "3": "C",
+        "4": "D"
+    }
 
-    results_list = []
-
+    # Iterate through each row in the DataFrame
     for index, row in df.iterrows():
+        total_questions += 1
         question = row['Question']
-        options = [row['Option A'], row['Option B'], row['Option C'], row['Option D']]
-        prompt = create_prompt(question, options)
-        context = f"Options:\nA. {options[0]}\nB. {options[1]}\nC. {options[2]}\nD. {options[3]}"
-        actual_output = model.generate(context, question)
+        option_a = row['Option A']
+        option_b = row['Option B']
+        option_c = row['Option C']
+        option_d = row['Option D']
+        options = f"A. {option_a}\nB. {option_b}\nC. {option_c}\nD. {option_d}"
+        correct_answer_num = str(row['Correct Answer'])
+        correct_answer = num_to_letter.get(correct_answer_num, "")
+        generated_answer = llama3.generate(options, question)
+        
+        if generated_answer == correct_answer:
+            correct_answers += 1
 
-        correct_answer_index = int(row['Correct Answer']) - 1
-        expected_output = ['A', 'B', 'C', 'D'][correct_answer_index]
-        correctness = actual_output == expected_output
+        results.append({
+            "Model": "Llama3",
+            "Question": question,
+            "Option A": option_a,
+            "Option B": option_b,
+            "Option C": option_c,
+            "Option D": option_d,
+            "Correct Answer": correct_answer,
+            "Generated Answer": generated_answer
+        })
 
-        new_row = {
-            'Model': 'Llama3',
-            'Question Number': index + 1,
-            'Model Answer': actual_output,
-            'Correct': correctness
-        }
-        results_list.append(new_row)
+    # Calculate overall accuracy
+    accuracy = (correct_answers / total_questions) * 100 if total_questions > 0 else 0
 
-    results_df = pd.DataFrame(results_list)
+    # Determine the next instance number for the answer column
+    output_path = os.path.join(os.path.dirname(csv_file_path), 'resultNQ.csv')
+    if os.path.exists(output_path):
+        existing_df = pd.read_csv(output_path)
+        instance_number = len([col for col in existing_df.columns if col.startswith('Answer Instance')]) + 1
+    else:
+        existing_df = pd.DataFrame()
+        instance_number = 1
 
-    # Calculate accuracy
-    accuracy_percentage = calculate_accuracy(results_df)
-    logger.info(f"Accuracy: {accuracy_percentage:.2f}%")
+    new_column_name = f'Answer Instance{instance_number}'
 
-    # Add accuracy to the results DataFrame
-    accuracy_row = pd.DataFrame([{
-        'Model': 'Llama3',
-        'Question Number': 'Accuracy',
-        'Model Answer': '',
-        'Correct': accuracy_percentage
-    }])
-    results_df = pd.concat([results_df, accuracy_row], ignore_index=True)
+    # Merge the new results with the existing results
+    results_df = pd.DataFrame(results)
+    if not existing_df.empty:
+        merged_df = pd.merge(existing_df, results_df[['Question', 'Generated Answer']], on='Question', how='left')
+        merged_df.rename(columns={'Generated Answer': new_column_name}, inplace=True)
+    else:
+        results_df.rename(columns={'Generated Answer': new_column_name}, inplace=True)
+        merged_df = results_df
 
-    return results_df
+    merged_df.to_csv(output_path, index=False)
+
+    print(f"Results saved to {output_path}")
+    print(f"Accuracy: {accuracy:.2f}%")
 
 if __name__ == "__main__":
-    # Initialize an empty DataFrame to store results
-    all_results_df = pd.DataFrame(columns=['Model', 'Question Number', 'Model Answer', 'Correct'])
-
-    # Load existing results if they exist
-    results_csv_path = os.path.join(os.path.dirname(__file__), '../datasets/Llama3_results.csv')
-    if os.path.exists(results_csv_path):
-        all_results_df = pd.read_csv(results_csv_path)
-
-    # Evaluate the model
-    model_results_df = main()
-    all_results_df = pd.concat([all_results_df, model_results_df], ignore_index=True)
-
-    # Save the results to a CSV file
-    all_results_df.to_csv(results_csv_path, index=False)
+    # Construct the full path to the CSV file
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    csv_file_path = os.path.join(base_dir, '..', 'datasets', 'syntax.csv')
     
-    logger.info(f"Results saved to {results_csv_path}")
+    # Log the path for debugging
+    logger.info(f"CSV file path: {csv_file_path}")
+
+    # Verify the current working directory
+    current_working_dir = os.getcwd()
+    logger.info(f"Current working directory: {current_working_dir}")
+
+    # Read questions and generate answers
+    read_and_generate_answers(csv_file_path)
