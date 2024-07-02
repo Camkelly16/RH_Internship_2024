@@ -1,2 +1,2 @@
 Question;Option A;Option B;Option C;Option D;Correct Answer
-"How do you filter metrics by the label 'job' with the value 'api-server'?";"http_requests_total{job=""api-server""}";"http_requests_total[job=""api-server""]";"http_requests_total(job=""api-server"")";"http_requests_total@job=""api-server""";"1"
+"What PromQL expression calculates the rate of HTTP requests over the last 1 minute?";"rate(http_requests_total[1m])";"increase(http_requests_total[1m])";"sum(http_requests_total[1m])";"avg(http_requests_total[1m])";"1"

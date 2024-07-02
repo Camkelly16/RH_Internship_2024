@@ -2,8 +2,8 @@ import os
 import pandas as pd
 import argparse
 import logging
-import re
 from ollama import Client
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -35,12 +35,12 @@ class Ollama:
         ]
         try:
             response = chat_model.chat(model=self.model_name, messages=messages)
-            logger.info(f"Generated response: {response}")
             # Extract the single letter answer (A, B, C, or D) from the response
             if response and response['message'] and response['message']['content']:
-                match = re.search(r'\b[A-D]\b', response['message']['content'])
-                if match:
-                    return match.group(0)
+                content = response['message']['content'].strip().upper()
+                for letter in ['A', 'B', 'C', 'D']:
+                    if letter in content:
+                        return letter
             logger.error(f"Failed to extract a valid answer from response: {response['message']['content']}")
             return ""
         except Exception as e:
@@ -66,12 +66,12 @@ class Ollama:
         ]
         try:
             response = await chat_model.chat(model=self.model_name, messages=messages)
-            logger.info(f"Generated response: {response}")
             # Extract the single letter answer (A, B, C, or D) from the response
             if response and response['message'] and response['message']['content']:
-                match = re.search(r'\b[A-D]\b', response['message']['content'])
-                if match:
-                    return match.group(0)
+                content = response['message']['content'].strip().upper()
+                for letter in ['A', 'B', 'C', 'D']:
+                    if letter in content:
+                        return letter
             logger.error(f"Failed to extract a valid answer from response: {response['message']['content']}")
             return ""
         except Exception as e:
@@ -135,6 +135,19 @@ def main(model_name: str) -> pd.DataFrame:
         expected_output = ['A', 'B', 'C', 'D'][correct_answer_index]
         correctness = actual_output == expected_output
 
+        # Log the details
+        logger.info(f"""
+        Question {index + 1}:
+        {question}
+        Options:
+        A. {options[0]}
+        B. {options[1]}
+        C. {options[2]}
+        D. {options[3]}
+        Correct Answer: {expected_output}
+        Model's Answer: {actual_output}
+        """)
+
         new_row = {
             'Model': model_name,
             'Question Number': index + 1,
@@ -165,7 +178,7 @@ if __name__ == "__main__":
 
     # Load existing results if they exist
     results_csv_path = os.path.join(os.path.dirname(__file__), '../datasets/results.csv')
-    if os.path.exists(results_csv_path):
+    if (os.path.exists(results_csv_path)):
         all_results_df = pd.read_csv(results_csv_path)
 
     # Evaluate the model

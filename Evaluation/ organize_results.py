@@ -2,7 +2,11 @@ import pandas as pd
 import os
 
 def get_correct_answers(syntax_csv_path: str):
-    syntax_df = pd.read_csv(syntax_csv_path, delimiter=';')
+    try:
+        syntax_df = pd.read_csv(syntax_csv_path, delimiter=';')
+    except FileNotFoundError:
+        print(f"Error: The file {syntax_csv_path} does not exist.")
+        return None, None
     correct_answers = {}
     questions = {}
     for index, row in syntax_df.iterrows():
@@ -32,6 +36,9 @@ def get_correct_answers(syntax_csv_path: str):
 def organize_results_side_by_side(results_csv_path: str, syntax_csv_path: str, output_csv_path: str):
     # Read the correct answers and questions from syntax.csv
     correct_answers, questions = get_correct_answers(syntax_csv_path)
+    if correct_answers is None or questions is None:
+        print("Error in getting correct answers or questions.")
+        return
 
     # Read the existing results CSV
     if not os.path.exists(results_csv_path):
@@ -40,9 +47,6 @@ def organize_results_side_by_side(results_csv_path: str, syntax_csv_path: str, o
     
     results_df = pd.read_csv(results_csv_path)
     print("Results CSV Columns:", results_df.columns)  # Debug: Print the columns of the results CSV
-
-    # Filter out the accuracy rows
-    accuracy_df = results_df[results_df['Question Number'].isna()][['Model', 'Accuracy']].drop_duplicates()
 
     # Filter out the actual results rows
     results_df = results_df.dropna(subset=['Question Number'])
@@ -91,7 +95,12 @@ if __name__ == "__main__":
     # Define the absolute paths for the input and output files
     results_csv_path = os.path.abspath('datasets/results.csv')
     syntax_csv_path = os.path.abspath('datasets/syntax.csv')
-    output_csv_path = os.path.abspath('datasets/organized_results.csv')
+    output_csv_path = os.path.abspath('datasets/organized_resultsQ.csv')
     
+    # Debug: Print the file paths being used
+    print(f"Results CSV Path: {results_csv_path}")
+    print(f"Syntax CSV Path: {syntax_csv_path}")
+    print(f"Output CSV Path: {output_csv_path}")
+
     # Organize the results
     organize_results_side_by_side(results_csv_path, syntax_csv_path, output_csv_path)

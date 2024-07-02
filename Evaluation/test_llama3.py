@@ -99,11 +99,25 @@ def read_and_generate_answers(csv_file_path):
         option_b = row['Option B']
         option_c = row['Option C']
         option_d = row['Option D']
-        options = f"A. {option_a}\nB. {option_b}\nC. {option_c}\nD. {option_d}"
+        options = [option_a, option_b, option_c, option_d]
+        options_str = f"A. {option_a}\nB. {option_b}\nC. {option_c}\nD. {option_d}"
         correct_answer_num = str(row['Correct Answer'])
         correct_answer = num_to_letter.get(correct_answer_num, "")
-        generated_answer = llama3.generate(options, question)
+        generated_answer = llama3.generate(options_str, question)
         
+        # Log the question, options, and generated answer
+        logger.info(f"""
+Question {index + 1}:
+{question}
+Options:
+A. {options[0]}
+B. {options[1]}
+C. {options[2]}
+D. {options[3]}
+Correct Answer: {correct_answer}
+Model's Answer: {generated_answer}
+""")
+
         if generated_answer == correct_answer:
             correct_answers += 1
 
