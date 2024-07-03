@@ -177,7 +177,7 @@ if __name__ == "__main__":
     all_results_df = pd.DataFrame(columns=['Model', 'Question Number', 'Model Answer', 'Correct'])
 
     # Load existing results if they exist
-    results_csv_path = os.path.join(os.path.dirname(__file__), '../datasets/results.csv')
+    results_csv_path = os.path.join(os.path.dirname(__file__), '../datasets/resultsQ.csv')
     if (os.path.exists(results_csv_path)):
         all_results_df = pd.read_csv(results_csv_path)
 

@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 requests.packages.urllib3.disable_warnings()
 warnings.filterwarnings("ignore")
 
-class Llama3:
+class DGX:
     def __init__(self):
         # Ensure the Hugging Face API key is set correctly
         api_key = os.getenv("HUGGINGFACEHUB_API_TOKEN")
@@ -24,7 +24,7 @@ class Llama3:
             raise ValueError("Hugging Face API token not set in environment variables.")
 
         # Set the endpoint URL directly
-        endpoint_url = "https://meta-llama3-8b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com"
+        endpoint_url = "https://granite-7b-base-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/"
 
         # Create a session and disable SSL verification
         session = requests.Session()
@@ -75,8 +75,8 @@ def read_and_generate_answers(csv_file_path):
     df = pd.read_csv(csv_file_path, delimiter=';')
     logger.info(f"CSV columns: {df.columns.tolist()}")
 
-    # Instantiate the Llama3 class
-    llama3 = Llama3()
+    # Instantiate the DGX class
+    dgx = DGX()
 
     results = []
 
@@ -91,73 +91,63 @@ def read_and_generate_answers(csv_file_path):
         "4": "D"
     }
 
+    # Initialize an empty DataFrame to store results
+    all_results_df = pd.DataFrame(columns=['Model', 'Question Number', 'Model Answer', 'Correct'])
+
+    # Load existing results if they exist
+    results_csv_path = os.path.join(os.path.dirname(__file__), '../datasets/resultsNQ.csv')
+    if os.path.exists(results_csv_path):
+        all_results_df = pd.read_csv(results_csv_path)
+
     # Iterate through each row in the DataFrame
     for index, row in df.iterrows():
         total_questions += 1
+        question_number = index + 1
         question = row['Question']
         option_a = row['Option A']
         option_b = row['Option B']
         option_c = row['Option C']
         option_d = row['Option D']
         options = [option_a, option_b, option_c, option_d]
-        options_str = f"A. {option_a}\nB. {option_b}\nC. {option_c}\nD. {option_d}"
         correct_answer_num = str(row['Correct Answer'])
         correct_answer = num_to_letter.get(correct_answer_num, "")
-        generated_answer = llama3.generate(options_str, question)
+        generated_answer = dgx.generate(f"A. {option_a}\nB. {option_b}\nC. {option_c}\nD. {option_d}", question)
         
-        # Log the question, options, and generated answer
-        logger.info(f"""
-Question {index + 1}:
-{question}
-Options:
-A. {options[0]}
-B. {options[1]}
-C. {options[2]}
-D. {options[3]}
-Correct Answer: {correct_answer}
-Model's Answer: {generated_answer}
-""")
-
-        if generated_answer == correct_answer:
+        is_correct = generated_answer == correct_answer
+        if is_correct:
             correct_answers += 1
 
         results.append({
-            "Model": "Llama3",
-            "Question": question,
-            "Option A": option_a,
-            "Option B": option_b,
-            "Option C": option_c,
-            "Option D": option_d,
-            "Correct Answer": correct_answer,
-            "Generated Answer": generated_answer
+            "Model": "Granite",
+            "Question Number": question_number,
+            "Model Answer": generated_answer,
+            "Correct": is_correct
         })
+
+        # Log the details
+        logger.info(f"""
+        Question {index + 1}:
+        {question}
+        Options:
+        A. {options[0]}
+        B. {options[1]}
+        C. {options[2]}
+        D. {options[3]}
+        Correct Answer: {correct_answer}
+        Model's Answer: {generated_answer}
+        """)
 
     # Calculate overall accuracy
     accuracy = (correct_answers / total_questions) * 100 if total_questions > 0 else 0
 
-    # Determine the next instance number for the answer column
-    output_path = os.path.join(os.path.dirname(csv_file_path), 'resultNQ.csv')
-    if os.path.exists(output_path):
-        existing_df = pd.read_csv(output_path)
-        instance_number = len([col for col in existing_df.columns if col.startswith('Answer Instance')]) + 1
-    else:
-        existing_df = pd.DataFrame()
-        instance_number = 1
+    # Append new results to the DataFrame
+    new_results_df = pd.DataFrame(results)
+    all_results_df = pd.concat([all_results_df, new_results_df], ignore_index=True)
 
-    new_column_name = f'Answer Instance{instance_number}'
+    # Save the updated results to the CSV file
+    all_results_df.to_csv(results_csv_path, index=False)
 
-    # Merge the new results with the existing results
-    results_df = pd.DataFrame(results)
-    if not existing_df.empty:
-        merged_df = pd.merge(existing_df, results_df[['Question', 'Generated Answer']], on='Question', how='left')
-        merged_df.rename(columns={'Generated Answer': new_column_name}, inplace=True)
-    else:
-        results_df.rename(columns={'Generated Answer': new_column_name}, inplace=True)
-        merged_df = results_df
-
-    merged_df.to_csv(output_path, index=False)
-
-    print(f"Results saved to {output_path}")
+    print(f"Results saved to {results_csv_path}")
     print(f"Accuracy: {accuracy:.2f}%")
 
 if __name__ == "__main__":
