@@ -24,7 +24,7 @@ class DGX2:
             raise ValueError("Hugging Face API token not set in environment variables.")
 
         # Set the endpoint URL directly
-        endpoint_url = "https://granite-7b-base-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/"
+        endpoint_url = "http://meta-llama3-8b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/"
         #https://granite-7b-base-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
         #https://mistral-7b-instruct-v03-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
         #https://http://meta-llama3-8b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
@@ -87,7 +87,7 @@ def read_and_generate_answers(csv_file_path):
     all_results_df = pd.DataFrame(columns=['Model', 'Question Number', 'Model Answer', 'Correct'])
 
     # Load existing results if they exist
-    results_csv_path = os.path.join(os.path.dirname(__file__), '../Results/resultsNP.csv')
+    results_csv_path = os.path.join(os.path.dirname(__file__), '../Results/resultsNQNP.csv')
     if os.path.exists(results_csv_path):
         all_results_df = pd.read_csv(results_csv_path)
 

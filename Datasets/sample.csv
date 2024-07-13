@@ -1,0 +1,2 @@
+Question;Option A
+"Which of the following PromQL queries will select all http_requests_total time series for "staging", "testing", and "development" environments where the HTTP method is not "GET"?";"http_requests_total{environment="staging|testing|development",method!="GET"}"

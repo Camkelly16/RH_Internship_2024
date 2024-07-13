@@ -1,0 +1,10 @@
+Model,Accuracy
+llama3,66.25
+llama3,70.0
+llama3,72.5
+mistral,76.25
+mistral,78.75
+mistral,80.0
+granite-code:8b,72.5
+granite-code:8b,70.0
+granite-code:8b,63.74

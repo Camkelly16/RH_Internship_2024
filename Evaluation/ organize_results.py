@@ -99,10 +99,10 @@ def organize_results_side_by_side(results_csv_path: str, syntax_csv_path: str, o
 
 if __name__ == "__main__":
     # Define the absolute paths for the input and output files
-    results_csv_path = os.path.abspath('Results/resultsNQPS.csv')
+    results_csv_path = os.path.abspath('Results/resultsNQNP.csv')
     syntax_csv_path = os.path.abspath('Datasets/syntax.csv')
-    output_csv_path = os.path.abspath('Results/organized_resultsNQPS.csv')
-    incorrect_csv_path = os.path.abspath('Results/incorrectResultsNQPS.csv')
+    output_csv_path = os.path.abspath('Results/organized_resultsNQNP.csv')
+    incorrect_csv_path = os.path.abspath('Results/incorrectResultsNQNP.csv')
     
     # Debug: Print the file paths being used
     print(f"Results CSV Path: {results_csv_path}")
