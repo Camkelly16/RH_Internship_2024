@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 requests.packages.urllib3.disable_warnings()
 warnings.filterwarnings("ignore")
 
-class DGX:
+class DGX2:
     def __init__(self):
         # Ensure the Hugging Face API key is set correctly
         api_key = os.getenv("HUGGINGFACEHUB_API_TOKEN")
@@ -24,14 +24,15 @@ class DGX:
             raise ValueError("Hugging Face API token not set in environment variables.")
 
         # Set the endpoint URL directly
-        endpoint_url = "https://granite-7b-base-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com"
+        endpoint_url = "https://granite-7b-base-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/"
         #https://granite-7b-base-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
         #https://mistral-7b-instruct-v03-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
-        #http://meta-llama3-8b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
+        #https://http://meta-llama3-8b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
 
         # Create a session and disable SSL verification
         session = requests.Session()
         session.verify = False
+        session.timeout = 60  # Set a timeout of 60 seconds
 
         # Update the HuggingFaceEndpoint to use the session for requests
         self.llm = HuggingFaceEndpoint(
@@ -45,56 +46,9 @@ class DGX:
         )
 
     def generate(self, options: str, question: str) -> str:
-        # Define the prompt template with the provided few-shot examples
-        few_shot_examples = """
-        You are a PromQl expert taking a PromQl multiple-choice test.
-        For each question, you need to select the correct option from the choices given.
-        Do not provide explanations or additional information.
-
-        ### EXAMPLES:
-        ### QUESTION:
-        What PromQL expression calculates the rate of HTTP requests over the last 1 minute?
-        ### OPTIONS:
-        A. rate(http_requests_total[1m])
-        B. increase(http_requests_total[1m])
-        C. sum(http_requests_total[1m])
-        D. avg(http_requests_total[1m])
-        ### ANSWER:
-        A
-
-        ### QUESTION:
-        How do you filter metrics by the label 'job' with the value 'api-server'?
-        ### OPTIONS:
-        A. http_requests_total{job="api-server"}
-        B. http_requests_total[job="api-server"}
-        C. http_requests_total(job="api-server")
-        D. http_requests_total@job="api-server"
-        ### ANSWER:
-        A
-
-        ### QUESTION:
-        What is the correct PromQL query to select the CPU time in nanoseconds for a web process in a production environment for a specific application, revision, and job?
-        ### OPTIONS:
-        A. instance_cpu_time_ns{app="tiger", proc="db", rev="34d0f99", env="dev", job="cluster-manager"}
-        B. instance_cpu_time_ns{app="lion", proc="web", rev="34d0f99", env="prod", job="cluster-manager"}
-        C. instance_cpu_time_ns{app="lion", proc="web", rev="34d0f99", env="staging", job="manager"}
-        D. instance_cpu_time_ns{app="lion", proc="web", rev="1234abcd", env="prod", job="cluster-manager"}
-        ### ANSWER:
-        B
-        """
-
-        # Append the actual question and options to the few-shot examples
-        prompt_template = f"""
-        {few_shot_examples}
-
-        ### QUESTION: 
-        {question}
-        ### OPTIONS:
-        {options}
-
-        ### ANSWER:
-        """
-        response = self.llm.invoke(prompt_template)
+        # Directly generate the response based on the question and options
+        prompt = f"Question: {question}\nOptions:\n{options}\nAnswer:"
+        response = self.llm.invoke(prompt)
         # Strip and debug the response
         response = response.strip()
         logger.debug(f"Raw response: {response}")
@@ -113,8 +67,8 @@ def read_and_generate_answers(csv_file_path):
     df = pd.read_csv(csv_file_path, delimiter=';')
     logger.info(f"CSV columns: {df.columns.tolist()}")
 
-    # Instantiate the DGX class
-    dgx = DGX()
+    # Instantiate the DGX2 class
+    dgx = DGX2()
 
     results = []
 
@@ -133,7 +87,7 @@ def read_and_generate_answers(csv_file_path):
     all_results_df = pd.DataFrame(columns=['Model', 'Question Number', 'Model Answer', 'Correct'])
 
     # Load existing results if they exist
-    results_csv_path = os.path.join(os.path.dirname(__file__), '../Results/resultsNQPS.csv')
+    results_csv_path = os.path.join(os.path.dirname(__file__), '../Results/resultsNP.csv')
     if os.path.exists(results_csv_path):
         all_results_df = pd.read_csv(results_csv_path)
 
@@ -146,10 +100,10 @@ def read_and_generate_answers(csv_file_path):
         option_b = row['Option B']
         option_c = row['Option C']
         option_d = row['Option D']
-        options = [option_a, option_b, option_c, option_d]
+        options = f"A. {option_a}\nB. {option_b}\nC. {option_c}\nD. {option_d}"
         correct_answer_num = str(row['Correct Answer'])
         correct_answer = num_to_letter.get(correct_answer_num, "")
-        generated_answer = dgx.generate(f"A. {option_a}\nB. {option_b}\nC. {option_c}\nD. {option_d}", question)
+        generated_answer = dgx.generate(options, question)
         
         is_correct = generated_answer == correct_answer
         if is_correct:
@@ -167,10 +121,10 @@ def read_and_generate_answers(csv_file_path):
         Question {index + 1}:
         {question}
         Options:
-        A. {options[0]}
-        B. {options[1]}
-        C. {options[2]}
-        D. {options[3]}
+        A. {option_a}
+        B. {option_b}
+        C. {option_c}
+        D. {option_d}
         Correct Answer: {correct_answer}
         Model's Answer: {generated_answer}
         """)
@@ -194,7 +148,7 @@ def read_and_generate_answers(csv_file_path):
 
 def save_accuracy_score(model_name, accuracy):
     # Path to the accuracy score file
-    accuracy_score_file = os.path.join(os.path.dirname(__file__), '../Results/accuracy_scoreNQPS.csv')
+    accuracy_score_file = os.path.join(os.path.dirname(__file__), '../Results/accuracy_scoreNP.csv')
 
     # Check if the file exists
     file_exists = os.path.exists(accuracy_score_file)

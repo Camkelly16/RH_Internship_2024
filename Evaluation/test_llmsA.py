@@ -116,11 +116,18 @@ def calculate_accuracy(results_df: pd.DataFrame, model_name: str) -> float:
     accuracy_percentage = (correct_answers / total_questions) * 100
     return accuracy_percentage
 
+def append_accuracy_to_csv(model_name: str, accuracy: float, csv_file_path: str):
+    accuracy_data = pd.DataFrame([{'Model': model_name, 'Accuracy': accuracy}])
+    if os.path.exists(csv_file_path):
+        accuracy_data.to_csv(csv_file_path, mode='a', header=False, index=False)
+    else:
+        accuracy_data.to_csv(csv_file_path, mode='w', header=True, index=False)
+
 def main(model_name: str) -> pd.DataFrame:
     client = Client(host='http://localhost:11434', timeout=140)
     model = Ollama(client=client, model_name=model_name)
     
-    csv_file_path = os.path.join(os.path.dirname(__file__), '../datasets/syntax.csv')
+    csv_file_path = os.path.join(os.path.dirname(__file__), '../Datasets/syntax.csv')
     df = read_csv_file(csv_file_path)
 
     results_list = []
@@ -162,6 +169,10 @@ def main(model_name: str) -> pd.DataFrame:
     accuracy_percentage = calculate_accuracy(results_df, model_name)
     logger.info(f"Accuracy for {model_name}: {accuracy_percentage:.2f}%")
 
+    # Append the accuracy to the CSV file
+    accuracy_csv_path = os.path.join(os.path.dirname(__file__), '../Results/accuracy_scoreQ.csv')
+    append_accuracy_to_csv(model_name, accuracy_percentage, accuracy_csv_path)
+
     return results_df
 
 if __name__ == "__main__":
@@ -177,7 +188,7 @@ if __name__ == "__main__":
     all_results_df = pd.DataFrame(columns=['Model', 'Question Number', 'Model Answer', 'Correct'])
 
     # Load existing results if they exist
-    results_csv_path = os.path.join(os.path.dirname(__file__), '../datasets/resultsQ.csv')
+    results_csv_path = os.path.join(os.path.dirname(__file__), '../Results/resultsQ.csv')
     if (os.path.exists(results_csv_path)):
         all_results_df = pd.read_csv(results_csv_path)
 
@@ -189,3 +200,4 @@ if __name__ == "__main__":
     all_results_df.to_csv(results_csv_path, index=False)
     
     logger.info(f"Results saved to {results_csv_path}")
+        # python test_llms.py --model llama3

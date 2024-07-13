@@ -20,20 +20,11 @@ def get_correct_answers(syntax_csv_path: str):
         }
         correct_option = row['Correct Answer']
         # Map 1, 2, 3, 4 to A, B, C, D
-        if correct_option == 1:
-            correct_answer = 'A'
-        elif correct_option == 2:
-            correct_answer = 'B'
-        elif correct_option == 3:
-            correct_answer = 'C'
-        elif correct_option == 4:
-            correct_answer = 'D'
-        else:
-            correct_answer = None
+        correct_answer = {1: 'A', 2: 'B', 3: 'C', 4: 'D'}.get(correct_option, None)
         correct_answers[question_number] = correct_answer
     return correct_answers, questions
 
-def organize_results_side_by_side(results_csv_path: str, syntax_csv_path: str, output_csv_path: str):
+def organize_results_side_by_side(results_csv_path: str, syntax_csv_path: str, output_csv_path: str, incorrect_csv_path: str):
     # Read the correct answers and questions from syntax.csv
     correct_answers, questions = get_correct_answers(syntax_csv_path)
     if correct_answers is None or questions is None:
@@ -53,6 +44,7 @@ def organize_results_side_by_side(results_csv_path: str, syntax_csv_path: str, o
 
     # Create a list to store organized results
     organized_data = []
+    incorrect_data = []
 
     # Get unique question numbers and models
     question_numbers = sorted(results_df['Question Number'].unique())
@@ -67,40 +59,56 @@ def organize_results_side_by_side(results_csv_path: str, syntax_csv_path: str, o
                 answers = question_data['Model Answer'].tolist()
                 correct_answer = correct_answers.get(question_number, "No correct answer")
                 question_info = questions.get(question_number, {})
-                entry = [model, question_info.get('Question'), 
+                entry = [model, question_number, question_info.get('Question'), 
                          question_info.get('Option A'), question_info.get('Option B'), 
                          question_info.get('Option C'), question_info.get('Option D'), 
                          correct_answer] + answers
                 organized_data.append(entry)
 
+                # Check if the model got the answer wrong
+                if correct_answer not in answers:
+                    incorrect_data.append(entry)
+
     # Determine the maximum number of answers any model has provided for a question
-    max_answers = max(len(row) - 7 for row in organized_data)  # Subtract 7 for fixed columns before the answers
+    max_answers = max(len(row) - 8 for row in organized_data)  # Subtract 8 for fixed columns before the answers
 
     # Construct columns based on the maximum number of answers
-    columns = ['Model', 'Question', 'Option A', 'Option B', 'Option C', 'Option D', 'Correct Answer'] + [f'Answer Instance {i+1}' for i in range(max_answers)]
+    columns = ['Model', 'Question Number', 'Question', 'Option A', 'Option B', 'Option C', 'Option D', 'Correct Answer'] + [f'Answer Instance {i+1}' for i in range(max_answers)]
 
     # Adjust organized_data entries to match the number of columns
     for entry in organized_data:
         if len(entry) < len(columns):
             entry.extend([None] * (len(columns) - len(entry)))
 
+    # Adjust incorrect_data entries to match the number of columns
+    for entry in incorrect_data:
+        if len(entry) < len(columns):
+            entry.extend([None] * (len(columns) - len(entry)))
+
     # Convert the organized data to a DataFrame
     organized_df = pd.DataFrame(organized_data, columns=columns)
+    incorrect_df = pd.DataFrame(incorrect_data, columns=columns)
     
     # Save the organized results to a new CSV file
     organized_df.to_csv(output_csv_path, index=False)
     print(f"Organized results saved to {output_csv_path}")
 
+    # Save the incorrect results to a new CSV file with a semicolon delimiter
+    incorrect_df.to_csv(incorrect_csv_path, index=False, sep=';')
+    print(f"Incorrect results saved to {incorrect_csv_path}")
+
 if __name__ == "__main__":
     # Define the absolute paths for the input and output files
-    results_csv_path = os.path.abspath('datasets/resultsNQ.csv')
-    syntax_csv_path = os.path.abspath('datasets/syntax.csv')
-    output_csv_path = os.path.abspath('datasets/organized_resultsNQ.csv')
+    results_csv_path = os.path.abspath('Results/resultsNQPS.csv')
+    syntax_csv_path = os.path.abspath('Datasets/syntax.csv')
+    output_csv_path = os.path.abspath('Results/organized_resultsNQPS.csv')
+    incorrect_csv_path = os.path.abspath('Results/incorrectResultsNQPS.csv')
     
     # Debug: Print the file paths being used
     print(f"Results CSV Path: {results_csv_path}")
     print(f"Syntax CSV Path: {syntax_csv_path}")
     print(f"Output CSV Path: {output_csv_path}")
+    print(f"Incorrect CSV Path: {incorrect_csv_path}")
 
     # Organize the results
-    organize_results_side_by_side(results_csv_path, syntax_csv_path, output_csv_path)
+    organize_results_side_by_side(results_csv_path, syntax_csv_path, output_csv_path, incorrect_csv_path)

@@ -78,7 +78,7 @@ def main(model_name):
     
     evaluation_dataset = EvaluationDataset()
     #creates an EvaluationDataset object to hold test cases.
-    csv_file_path = os.path.join(os.path.dirname(__file__), '../datasets/sample.csv')
+    csv_file_path = os.path.join(os.path.dirname(__file__), '../Datasets/sample.csv')
     #the path to the dataset CSV file.
 
     try:
@@ -143,3 +143,7 @@ if __name__ == "__main__":
     #allow of argument parsing for the script, 
     # parsing the --model argument and passing it to the main function.
     # python3 test_llms.py --model llama3
+    #https://granite-7b-base-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
+        #https://mistral-7b-instruct-v03-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
+        #https://http://meta-llama3-8b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
+
