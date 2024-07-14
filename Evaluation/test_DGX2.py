@@ -24,7 +24,7 @@ class DGX2:
             raise ValueError("Hugging Face API token not set in environment variables.")
 
         # Set the endpoint URL directly
-        endpoint_url = "http://meta-llama3-8b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/"
+        endpoint_url = "https://granite-7b-base-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/"
         #https://granite-7b-base-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
         #https://mistral-7b-instruct-v03-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
         #https://http://meta-llama3-8b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
@@ -148,7 +148,7 @@ def read_and_generate_answers(csv_file_path):
 
 def save_accuracy_score(model_name, accuracy):
     # Path to the accuracy score file
-    accuracy_score_file = os.path.join(os.path.dirname(__file__), '../Results/accuracy_scoreNP.csv')
+    accuracy_score_file = os.path.join(os.path.dirname(__file__), '../Results/accuracy_scoreNQNP.csv')
 
     # Check if the file exists
     file_exists = os.path.exists(accuracy_score_file)
