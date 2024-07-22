@@ -1,9 +1,9 @@
 import os
 import logging
-import pandas as pd
+import pandas as pd # type: ignore
 import requests
 import warnings
-from langchain_community.llms.huggingface_endpoint import HuggingFaceEndpoint
+from langchain_community.llms.huggingface_endpoint import HuggingFaceEndpoint # type: ignore
 
 # Ensure the CURL_CA_BUNDLE is empty to avoid SSL issues
 os.environ["CURL_CA_BUNDLE"] = ""
@@ -24,11 +24,10 @@ class DGX:
             raise ValueError("Hugging Face API token not set in environment variables.")
 
         # Set the endpoint URL directly
-        endpoint_url = "https://granite-7b-base-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com"
-        #https://granite-7b-base-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
+        endpoint_url = "https://granite-7b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/"
+        #https://granite-7b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
         #https://mistral-7b-instruct-v03-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
         #http://meta-llama3-8b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
-
         # Create a session and disable SSL verification
         session = requests.Session()
         session.verify = False

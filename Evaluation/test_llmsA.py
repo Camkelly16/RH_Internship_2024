@@ -55,7 +55,6 @@ class Ollama:
                 "content": (
                     "You are a PromQl expert taking a PromQl multiple-choice test. "
                     "For each question, you need to select the correct option from the choices given. "
-                    "Your response should only be the letter of the correct option (A, B, C, or D) and nothing else. "
                     "Do not provide explanations or additional information."
                 )
             },

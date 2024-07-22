@@ -1,9 +1,9 @@
 import os
 import logging
-import pandas as pd
+import pandas as pd # type: ignore
 import requests
 import warnings
-from langchain_community.llms.huggingface_endpoint import HuggingFaceEndpoint
+from langchain_community.llms.huggingface_endpoint import HuggingFaceEndpoint # type: ignore
 
 # Ensure the CURL_CA_BUNDLE is empty to avoid SSL issues
 os.environ["CURL_CA_BUNDLE"] = ""
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 requests.packages.urllib3.disable_warnings()
 warnings.filterwarnings("ignore")
 
-class DGX2:
+class DGX3:
     def __init__(self):
         # Ensure the Hugging Face API key is set correctly
         api_key = os.getenv("HUGGINGFACEHUB_API_TOKEN")
@@ -27,12 +27,10 @@ class DGX2:
         endpoint_url = "https://granite-7b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/"
         #https://granite-7b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
         #https://mistral-7b-instruct-v03-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
-        #https://http://meta-llama3-8b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
-
+        #http://meta-llama3-8b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
         # Create a session and disable SSL verification
         session = requests.Session()
         session.verify = False
-        session.timeout = 60  # Set a timeout of 60 seconds
 
         # Update the HuggingFaceEndpoint to use the session for requests
         self.llm = HuggingFaceEndpoint(
@@ -46,9 +44,20 @@ class DGX2:
         )
 
     def generate(self, options: str, question: str) -> str:
-        # Directly generate the response based on the question and options
-        prompt = f"Question: {question}\nOptions:\n{options}\nAnswer:"
-        response = self.llm.invoke(prompt)
+        # Define the new prompt template without few-shot examples
+        prompt_template = f"""
+        You are a PromQl expert taking a PromQl multiple-choice test.
+        For each question, you need to select the correct option from the choices given.
+        Do not provide explanations or additional information.
+
+        ### QUESTION: 
+        {question}
+        ### OPTIONS:
+        {options}
+
+        ### ANSWER:
+        """
+        response = self.llm.invoke(prompt_template)
         # Strip and debug the response
         response = response.strip()
         logger.debug(f"Raw response: {response}")
@@ -67,8 +76,8 @@ def read_and_generate_answers(csv_file_path):
     df = pd.read_csv(csv_file_path, delimiter=';')
     logger.info(f"CSV columns: {df.columns.tolist()}")
 
-    # Instantiate the DGX2 class
-    dgx = DGX2()
+    # Instantiate the DGX3 class
+    dgx = DGX3()
 
     results = []
 
@@ -87,7 +96,7 @@ def read_and_generate_answers(csv_file_path):
     all_results_df = pd.DataFrame(columns=['Model', 'Question Number', 'Model Answer', 'Correct'])
 
     # Load existing results if they exist
-    results_csv_path = os.path.join(os.path.dirname(__file__), '../Results/resultsNQNP.csv')
+    results_csv_path = os.path.join(os.path.dirname(__file__), '../Results/resultsNQ.csv')
     if os.path.exists(results_csv_path):
         all_results_df = pd.read_csv(results_csv_path)
 
@@ -148,7 +157,7 @@ def read_and_generate_answers(csv_file_path):
 
 def save_accuracy_score(model_name, accuracy):
     # Path to the accuracy score file
-    accuracy_score_file = os.path.join(os.path.dirname(__file__), '../Results/accuracy_scoreNQNP.csv')
+    accuracy_score_file = os.path.join(os.path.dirname(__file__), '../Results/accuracy_scoreNQ.csv')
 
     # Check if the file exists
     file_exists = os.path.exists(accuracy_score_file)
