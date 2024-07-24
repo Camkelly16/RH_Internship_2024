@@ -3,3 +3,40 @@ prompts
 "You are a PromQl expert taking a PromQl multiple-choice test. "
  "For each question, you need to select the correct option from the choices given. "
 "Do not provide explanations or additional information."
+
+Few shots:
+You are a PromQl expert taking a PromQl multiple-choice test.
+        For each question, you need to select the correct option from the choices given.
+        Do not provide explanations or additional information.
+
+        ### EXAMPLES:
+        ### QUESTION:
+        What PromQL expression calculates the rate of HTTP requests over the last 1 minute?
+        ### OPTIONS:
+        A. rate(http_requests_total[1m])
+        B. increase(http_requests_total[1m])
+        C. sum(http_requests_total[1m])
+        D. avg(http_requests_total[1m])
+        ### ANSWER:
+        A
+
+        ### QUESTION:
+        How do you filter metrics by the label 'job' with the value 'api-server'?
+        ### OPTIONS:
+        A. http_requests_total{job="api-server"}
+        B. http_requests_total[job="api-server"}
+        C. http_requests_total(job="api-server")
+        D. http_requests_total@job="api-server"
+        ### ANSWER:
+        A
+
+        ### QUESTION:
+        What is the correct PromQL query to select the CPU time in nanoseconds for a web process in a production environment for a specific application, revision, and job?
+        ### OPTIONS:
+        A. instance_cpu_time_ns{app="tiger", proc="db", rev="34d0f99", env="dev", job="cluster-manager"}
+        B. instance_cpu_time_ns{app="lion", proc="web", rev="34d0f99", env="prod", job="cluster-manager"}
+        C. instance_cpu_time_ns{app="lion", proc="web", rev="34d0f99", env="staging", job="manager"}
+        D. instance_cpu_time_ns{app="lion", proc="web", rev="1234abcd", env="prod", job="cluster-manager"}
+        ### ANSWER:
+        B
+        """
