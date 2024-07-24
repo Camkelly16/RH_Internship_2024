@@ -6,3 +6,4 @@ LLMs/
 /Evaluation/.deepeval-cache.jsonst
 instructlab/finetune/
 instructlab/models/
+instructlab/taxonomy
