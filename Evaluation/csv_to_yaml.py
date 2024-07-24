@@ -1,5 +1,5 @@
-import pandas as pd
-import yaml
+import pandas as pd # type: ignore
+import yaml # type: ignore
 import os
 
 def csv_to_qna_yaml(csv_file_path, yaml_file_path, delimiter=';'):

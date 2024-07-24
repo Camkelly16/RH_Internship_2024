@@ -1,7 +1,7 @@
 import os
 import logging
 import pandas as pd # type: ignore
-import requests
+import requests # type: ignore
 import warnings
 from langchain_community.llms.huggingface_endpoint import HuggingFaceEndpoint # type: ignore
 
