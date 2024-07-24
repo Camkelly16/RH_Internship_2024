@@ -4,3 +4,4 @@ LLMs/
 /Evaluation/.pytest_cache
 /Evaluation/_pycache
 /Evaluation/.deepeval-cache.jsonst
+instructlab/finetune/
