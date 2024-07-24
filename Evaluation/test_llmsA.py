@@ -1,5 +1,5 @@
 import os
-import pandas as pd
+import pandas as pd # type: ignore
 import argparse
 import logging
 from ollama import Client
@@ -199,4 +199,4 @@ if __name__ == "__main__":
     all_results_df.to_csv(results_csv_path, index=False)
     
     logger.info(f"Results saved to {results_csv_path}")
-        # python test_llms.py --model llama3
+        # python test_llmsA.py --model mistral

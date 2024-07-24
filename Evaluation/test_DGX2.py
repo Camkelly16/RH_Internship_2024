@@ -1,9 +1,9 @@
 import os
 import logging
-import pandas as pd
+import pandas as pd # type: ignore
 import requests
 import warnings
-from langchain_community.llms.huggingface_endpoint import HuggingFaceEndpoint
+from langchain_community.llms.huggingface_endpoint import HuggingFaceEndpoint # type: ignore
 
 # Ensure the CURL_CA_BUNDLE is empty to avoid SSL issues
 os.environ["CURL_CA_BUNDLE"] = ""
@@ -24,7 +24,7 @@ class DGX2:
             raise ValueError("Hugging Face API token not set in environment variables.")
 
         # Set the endpoint URL directly
-        endpoint_url = "https://granite-7b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/"
+        endpoint_url = "https://mistral-7b-instruct-v03-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/"
         #https://granite-7b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
         #https://mistral-7b-instruct-v03-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
         #https://http://meta-llama3-8b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
@@ -110,7 +110,7 @@ def read_and_generate_answers(csv_file_path):
             correct_answers += 1
 
         results.append({
-            "Model": "Granite",
+            "Model": "Mistral_Test",
             "Question Number": question_number,
             "Model Answer": generated_answer,
             "Correct": is_correct
@@ -141,7 +141,7 @@ def read_and_generate_answers(csv_file_path):
 
     # Log and save accuracy score
     logger.info(f"Accuracy: {accuracy:.2f}%")
-    save_accuracy_score("Granite", accuracy)
+    save_accuracy_score("Mistral_Test", accuracy)
 
     print(f"Results saved to {results_csv_path}")
     print(f"Accuracy: {accuracy:.2f}%")

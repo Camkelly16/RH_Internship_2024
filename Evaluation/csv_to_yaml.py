@@ -1,59 +1,81 @@
-import pandas as pd # type: ignore
+import pandas as pd
 import yaml
 import os
 
-class LiteralString(str):
-    pass
-
-def literal_str_representer(dumper, data):
-    return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
-
-yaml.add_representer(LiteralString, literal_str_representer)
-yaml.add_representer(LiteralString, yaml.representer.SafeRepresenter.represent_str)
-
-def csv_to_custom_yaml(csv_file_path, yaml_file_path, delimiter=';'):
+def csv_to_qna_yaml(csv_file_path, yaml_file_path, delimiter=';'):
     # Read the CSV file with the specified delimiter
     df = pd.read_csv(csv_file_path, delimiter=delimiter)
     
-    # Process the DataFrame to create the required YAML structure
-    seed_examples = []
+    # Process the DataFrame to create a list of QnA objects
+    qna_list = []
     for _, row in df.iterrows():
-        options = [
-            f"A) {row['Option A']}",
-            f"B) {row['Option B']}",
-            f"C) {row['Option C']}",
-            f"D) {row['Option D']}"
-        ]
-        options_text = "\n\n".join(options)
-        question_text = f"{row['Question']}\n\n{options_text}"
-        correct_answer_letter = chr(65 + (int(row["Correct Answer"]) - 1))  # Convert number to corresponding letter (0 -> A, 1 -> B, etc.)
-        correct_answer_text = row[f"Option {correct_answer_letter}"]
         qna_entry = {
-            "question": LiteralString(f"{row['Question']}\n\nA) {row['Option A']}\n\nB) {row['Option B']}\n\nC) {row['Option C']}\n\nD) {row['Option D']}"),
-            "answer": f"{correct_answer_letter}) {correct_answer_text}"
+            "question": row["Question"],
+            "options": {
+                "A": row["Option A"],
+                "B": row["Option B"],
+                "C": row["Option C"],
+                "D": row["Option D"]
+            },
+            "correct_answer": int(row["Correct Answer"])
         }
-        seed_examples.append(qna_entry)
+        qna_list.append(qna_entry)
     
-    # Define the complete YAML structure
-    yaml_data = {
-        "created_by": "Cameron K",
-        "domain": "PromQL",
-        "seed_examples": seed_examples,
-        "task_description": "Pick the correct answer choice for each PromQL Question"
-    }
-    
-    # Write the YAML data to a file
+    # Write the list to a YAML file
     with open(yaml_file_path, 'w') as yaml_file:
-        yaml.dump(yaml_data, yaml_file, default_flow_style=False, sort_keys=False)
+        yaml.dump(qna_list, yaml_file, sort_keys=False, default_flow_style=False)
         
     print(f"CSV file '{csv_file_path}' has been converted to YAML file '{yaml_file_path}'")
 
-# Define the file paths
-csv_file_path = '/home/cakelly/Desktop/RH_Internship_2024/Datasets/syntax.csv'
-yaml_file_path = '/home/cakelly/instructlab/taxonomy/knowledge/PromQL/PromQL.yaml'
+def create_datasets_from_csv():
+    # Define file paths for the syntax.csv
+    syntax_csv_file_path = 'Datasets/syntax.csv'
+    syntax_yaml_file_path = '/home/cakelly/dataset/syntax_train_data.yaml'
+    
+    # Convert syntax.csv to YAML
+    csv_to_qna_yaml(syntax_csv_file_path, syntax_yaml_file_path)
+
+    # Define file paths for the incorrectResultsNQ.csv
+    incorrect_csv_file_path = 'Results/incorrectResultsNQ.csv'
+    output_dir = '/home/cakelly/dataset'
+
+    # Read the CSV file with the specified delimiter
+    df = pd.read_csv(incorrect_csv_file_path, delimiter=';')
+    
+    # Function to map correct answers to 1, 2, 3, 4
+    def map_correct_answer(answer):
+        return {"A": 1, "B": 2, "C": 3, "D": 4}.get(str(answer).strip(), None)
+    
+    # Group the DataFrame by the 'Model' column
+    grouped = df.groupby('Model')
+    
+    # Process each group to create separate YAML files
+    for model, group in grouped:
+        qna_list = []
+        for _, row in group.iterrows():
+            qna_entry = {
+                "question": row["Question"],
+                "options": {
+                    "A": row["Option A"],
+                    "B": row["Option B"],
+                    "C": row["Option C"],
+                    "D": row["Option D"]
+                },
+                "correct_answer": map_correct_answer(row["Correct Answer"])
+            }
+            qna_list.append(qna_entry)
+        
+        # Define the output file path
+        yaml_file_path = os.path.join(output_dir, f'{model}_train_data.yaml')
+        
+        # Write the list to a YAML file
+        with open(yaml_file_path, 'w') as yaml_file:
+            yaml.dump(qna_list, yaml_file, sort_keys=False, default_flow_style=False)
+        
+        print(f"CSV data for model '{model}' has been converted to YAML file '{yaml_file_path}'")
 
 # Ensure the output directory exists
-os.makedirs(os.path.dirname(yaml_file_path), exist_ok=True)
+os.makedirs('/home/cakelly/dataset', exist_ok=True)
 
-# Convert the CSV to custom YAML
-csv_to_custom_yaml(csv_file_path, yaml_file_path)
+# Create datasets from CSV
+create_datasets_from_csv()

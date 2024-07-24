@@ -1,7 +1,7 @@
 Question;Option A;Option B;Option C;Option D;Correct Answer
 "What PromQL expression calculates the rate of HTTP requests over the last 1 minute?";"rate(http_requests_total[1m])";"increase(http_requests_total[1m])";"sum(http_requests_total[1m])";"avg(http_requests_total[1m])";"1"
 "How do you filter metrics by the label 'job' with the value 'api-server'?";"http_requests_total{job=""api-server""}";"http_requests_total[job=""api-server""]";"http_requests_total(job=""api-server"")";"http_requests_total@job=""api-server""";"1"
-"How do you filter metrics by the label"Which PromQL expression calculates  is the correct way to apply a simple rate function?";"(metric_name)";"rate(metric_name[5m])";"rate(metric_name) by (instance)";"rate(5m)(metric_name)";"2"
+"How do you filter metrics by the label"Which PromQL expression calculates is the correct way to apply a simple rate function?";"(metric_name)";"rate(metric_name[5m])";"rate(metric_name) by (instance)";"rate(5m)(metric_name)";"2"
 "Which PromQL expression filters metrics to those where the label 'status' is not equal to '200'?";"http_requests_total{status!=""200""}";"http_requests_total{status<>200}";"http_requests_total(status!=""200"")";"http_requests_total{status!200}";"1"
 "How do you select the last value of a time series in PromQL?";"last_over_time(metric_name[5m])";"max(metric_name)";"metric_name";"metric_name[5m]";"1"
 "How do you calculate the average CPU usage per instance over the last 5 minutes?";"avg(rate(node_cpu_seconds_total[5m])) by (instance)";"sum(rate(node_cpu_seconds_total[5m])) by (instance)";"max(rate(node_cpu_seconds_total[5m])) by (instance)";"min(rate(node_cpu_seconds_total[5m])) by (instance)";"1"
