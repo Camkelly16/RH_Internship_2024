@@ -1,0 +1,96 @@
+/* src/components/Chatbot.css */
+
+.chatbot {
+  display: flex;
+  flex-direction: column;
+  height: 80vh;
+  width: 400px;
+  margin: 0 auto;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.chat-window {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  background: #f9f9f9;
+}
+
+.message {
+  margin: 5px 0;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.message.user {
+  background: #d1e7dd;
+  align-self: flex-end;
+}
+
+.message.bot {
+  background: #f8d7da;
+  align-self: flex-start;
+}
+
+.chat-input {
+  display: flex;
+  flex-direction: column; /* Stack the textarea and button vertically */
+  border-top: 1px solid #ccc;
+  padding: 10px;
+  background: #f9f9f9;
+}
+
+.chat-input textarea {
+  width: auto;
+  min-height: 50px; /* Adjust as needed */
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  padding: 10px;
+  font-size: 16px;
+  resize: none; /* Prevent manual resizing */
+  overflow: hidden; /* Hide scrollbars */
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.chat-input textarea:focus {
+  border-color: #007bff;
+}
+
+.chat-input button {
+  margin-top: 10px; /* Space between textarea and button */
+  padding: 10px;
+  border: none;
+  background: #007bff;
+  color: white;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.chat-input button:hover {
+  background: #0056b3;
+}
+
+.chat-input button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.model-selector {
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.model-selector label {
+  margin-right: 10px;
+}
+
+.model-selector select {
+  padding: 5px;
+}
