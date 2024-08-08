@@ -20,15 +20,6 @@ class Ollama:
         chat_model = self.load_model()
         messages = [
             {
-                "role": "system",
-                "content": (
-                    "You are a PromQl expert taking a PromQl multiple-choice test. "
-                    "For each question, you need to select the correct option from the choices given. "
-                    "Your response should only be the letter of the correct option (A, B, C, or D) and nothing else. "
-                    "Do not provide explanations or additional information."
-                )
-            },
-            {
                 "role": "user",
                 "content": message_prompt,
             },
@@ -50,14 +41,6 @@ class Ollama:
     async def a_generate(self, message_prompt: str) -> str:
         chat_model = self.load_model()
         messages = [
-            {
-                "role": "system",
-                "content": (
-                    "You are a PromQl expert taking a PromQl multiple-choice test. "
-                    "For each question, you need to select the correct option from the choices given. "
-                    "Do not provide explanations or additional information."
-                )
-            },
             {
                 "role": "user",
                 "content": message_prompt,
@@ -97,7 +80,6 @@ def create_prompt(question: str, options: list[str]) -> str:
     return f"""
     Question:
     {question}
-    Only output the letter of the correct option (A, B, C, or D) without any additional text or explanation.
     -----------
     Options:
     A. {options[0]}
@@ -169,7 +151,7 @@ def main(model_name: str) -> pd.DataFrame:
     logger.info(f"Accuracy for {model_name}: {accuracy_percentage:.2f}%")
 
     # Append the accuracy to the CSV file
-    accuracy_csv_path = os.path.join(os.path.dirname(__file__), '../Results/accuracy_scoreQ.csv')
+    accuracy_csv_path = os.path.join(os.path.dirname(__file__), '../Results/accuracy_scoreQNP.csv')
     append_accuracy_to_csv(model_name, accuracy_percentage, accuracy_csv_path)
 
     return results_df
@@ -187,7 +169,7 @@ if __name__ == "__main__":
     all_results_df = pd.DataFrame(columns=['Model', 'Question Number', 'Model Answer', 'Correct'])
 
     # Load existing results if they exist
-    results_csv_path = os.path.join(os.path.dirname(__file__), '../Results/resultsQ.csv')
+    results_csv_path = os.path.join(os.path.dirname(__file__), '../Results/resultsQNP.csv')
     if (os.path.exists(results_csv_path)):
         all_results_df = pd.read_csv(results_csv_path)
 
@@ -199,4 +181,3 @@ if __name__ == "__main__":
     all_results_df.to_csv(results_csv_path, index=False)
     
     logger.info(f"Results saved to {results_csv_path}")
-        # python test_llmsA.py --model mistral

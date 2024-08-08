@@ -18,15 +18,44 @@ class Ollama:
 
     def generate(self, message_prompt: str) -> str:
         chat_model = self.load_model()
+        examples = (
+            "You are a PromQl expert taking a PromQl multiple-choice test.\n"
+            "For each question, you need to select the correct option from the choices given.\n"
+            "Do not provide explanations or additional information.\n\n"
+            "### EXAMPLES:\n"
+            "### QUESTION:\n"
+            "What PromQL expression calculates the rate of HTTP requests over the last 1 minute?\n"
+            "### OPTIONS:\n"
+            "A. rate(http_requests_total[1m])\n"
+            "B. increase(http_requests_total[1m])\n"
+            "C. sum(http_requests_total[1m])\n"
+            "D. avg(http_requests_total[1m])\n"
+            "### ANSWER:\n"
+            "A\n\n"
+            "### QUESTION:\n"
+            "How do you filter metrics by the label 'job' with the value 'api-server'?\n"
+            "### OPTIONS:\n"
+            "A. http_requests_total{job=\"api-server\"}\n"
+            "B. http_requests_total[job=\"api-server\"]\n"
+            "C. http_requests_total(job=\"api-server\")\n"
+            "D. http_requests_total@job=\"api-server\"\n"
+            "### ANSWER:\n"
+            "A\n\n"
+            "### QUESTION:\n"
+            "What is the correct PromQL query to select the CPU time in nanoseconds for a web process in a production environment for a specific application, revision, and job?\n"
+            "### OPTIONS:\n"
+            "A. instance_cpu_time_ns{app=\"tiger\", proc=\"db\", rev=\"34d0f99\", env=\"dev\", job=\"cluster-manager\"}\n"
+            "B. instance_cpu_time_ns{app=\"lion\", proc=\"web\", rev=\"34d0f99\", env=\"prod\", job=\"cluster-manager\"}\n"
+            "C. instance_cpu_time_ns{app=\"lion\", proc=\"web\", rev=\"34d0f99\", env=\"staging\", job=\"manager\"}\n"
+            "D. instance_cpu_time_ns{app=\"lion\", proc=\"web\", rev=\"1234abcd\", env=\"prod\", job=\"cluster-manager\"}\n"
+            "### ANSWER:\n"
+            "B\n\n"
+        )
+
         messages = [
             {
                 "role": "system",
-                "content": (
-                    "You are a PromQl expert taking a PromQl multiple-choice test. "
-                    "For each question, you need to select the correct option from the choices given. "
-                    "Your response should only be the letter of the correct option (A, B, C, or D) and nothing else. "
-                    "Do not provide explanations or additional information."
-                )
+                "content": examples
             },
             {
                 "role": "user",
@@ -49,14 +78,44 @@ class Ollama:
 
     async def a_generate(self, message_prompt: str) -> str:
         chat_model = self.load_model()
+        examples = (
+            "You are a PromQl expert taking a PromQl multiple-choice test.\n"
+            "For each question, you need to select the correct option from the choices given.\n"
+            "Do not provide explanations or additional information.\n\n"
+            "### EXAMPLES:\n"
+            "### QUESTION:\n"
+            "What PromQL expression calculates the rate of HTTP requests over the last 1 minute?\n"
+            "### OPTIONS:\n"
+            "A. rate(http_requests_total[1m])\n"
+            "B. increase(http_requests_total[1m])\n"
+            "C. sum(http_requests_total[1m])\n"
+            "D. avg(http_requests_total[1m])\n"
+            "### ANSWER:\n"
+            "A\n\n"
+            "### QUESTION:\n"
+            "How do you filter metrics by the label 'job' with the value 'api-server'?\n"
+            "### OPTIONS:\n"
+            "A. http_requests_total{job=\"api-server\"}\n"
+            "B. http_requests_total[job=\"api-server\"]\n"
+            "C. http_requests_total(job=\"api-server\")\n"
+            "D. http_requests_total@job=\"api-server\"\n"
+            "### ANSWER:\n"
+            "A\n\n"
+            "### QUESTION:\n"
+            "What is the correct PromQL query to select the CPU time in nanoseconds for a web process in a production environment for a specific application, revision, and job?\n"
+            "### OPTIONS:\n"
+            "A. instance_cpu_time_ns{app=\"tiger\", proc=\"db\", rev=\"34d0f99\", env=\"dev\", job=\"cluster-manager\"}\n"
+            "B. instance_cpu_time_ns{app=\"lion\", proc=\"web\", rev=\"34d0f99\", env=\"prod\", job=\"cluster-manager\"}\n"
+            "C. instance_cpu_time_ns{app=\"lion\", proc=\"web\", rev=\"34d0f99\", env=\"staging\", job=\"manager\"}\n"
+            "D. instance_cpu_time_ns{app=\"lion\", proc=\"web\", rev=\"1234abcd\", env=\"prod\", job=\"cluster-manager\"}\n"
+            "### ANSWER:\n"
+            "B\n\n"
+        )
+
         messages = [
             {
                 "role": "system",
-                "content": (
-                    "You are a PromQl expert taking a PromQl multiple-choice test. "
-                    "For each question, you need to select the correct option from the choices given. "
-                    "Do not provide explanations or additional information."
-                )
+                "content": examples
             },
             {
                 "role": "user",
@@ -169,7 +228,7 @@ def main(model_name: str) -> pd.DataFrame:
     logger.info(f"Accuracy for {model_name}: {accuracy_percentage:.2f}%")
 
     # Append the accuracy to the CSV file
-    accuracy_csv_path = os.path.join(os.path.dirname(__file__), '../Results/accuracy_scoreQ.csv')
+    accuracy_csv_path = os.path.join(os.path.dirname(__file__), '../Results/accuracy_scoreQPS.csv')
     append_accuracy_to_csv(model_name, accuracy_percentage, accuracy_csv_path)
 
     return results_df
@@ -187,7 +246,7 @@ if __name__ == "__main__":
     all_results_df = pd.DataFrame(columns=['Model', 'Question Number', 'Model Answer', 'Correct'])
 
     # Load existing results if they exist
-    results_csv_path = os.path.join(os.path.dirname(__file__), '../Results/resultsQ.csv')
+    results_csv_path = os.path.join(os.path.dirname(__file__), '../Results/resultsQPS.csv')
     if (os.path.exists(results_csv_path)):
         all_results_df = pd.read_csv(results_csv_path)
 

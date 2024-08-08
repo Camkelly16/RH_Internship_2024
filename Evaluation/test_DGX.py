@@ -24,10 +24,10 @@ class DGX:
             raise ValueError("Hugging Face API token not set in environment variables.")
 
         # Set the endpoint URL directly
-        endpoint_url = "https://mistral-7b-instruct-v03-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/"
+        endpoint_url = "https://granite-7b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/"
         #https://granite-7b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
         #https://mistral-7b-instruct-v03-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
-        #http://meta-llama3-8b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
+        #https://meta-llama3-8b-instruct-perfconf-hackathon.apps.dripberg-dgx2.rdu3.labs.perfscale.redhat.com/
         # Create a session and disable SSL verification
         session = requests.Session()
         session.verify = False
@@ -155,7 +155,7 @@ def read_and_generate_answers(csv_file_path):
             correct_answers += 1
 
         results.append({
-            "Model": "Mistral_Test",
+            "Model": "Granite",
             "Question Number": question_number,
             "Model Answer": generated_answer,
             "Correct": is_correct
@@ -186,7 +186,7 @@ def read_and_generate_answers(csv_file_path):
 
     # Log and save accuracy score
     logger.info(f"Accuracy: {accuracy:.2f}%")
-    save_accuracy_score("Mistral_Test", accuracy)
+    save_accuracy_score("Granite", accuracy)
 
     print(f"Results saved to {results_csv_path}")
     print(f"Accuracy: {accuracy:.2f}%")
